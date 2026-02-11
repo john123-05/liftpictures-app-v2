@@ -1,0 +1,680 @@
+{
+  "common": {
+    "liftpictures": "Liftpictures",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "ok": "OK",
+    "continue": "Continue",
+    "back": "Back",
+    "or": "or",
+    "info": "Info"
+  },
+  "home": {
+    "welcome": "Welcome back, {{name}}!",
+    "photosAndMemories": "Photos & Memories",
+    "scanQR": "Capture Ride",
+    "processing": "Processing...",
+    "findYourPhotos": "Just rode? Save the time",
+    "toGallery": "To Gallery",
+    "purchaseOptions": "Purchase Options",
+    "dayPhotoPass": "Day Photo Pass",
+    "parkTickets": "Park Tickets",
+    "from": "from",
+    "parkInfo": "Park Info",
+    "news": "News",
+    "whatsNew": "What's new?",
+    "menu": "Menu",
+    "restaurantAndSnacks": "Restaurant & Snacks",
+    "infos": "Info",
+    "openingHoursEtc": "Opening hours etc.",
+    "parkMap": "Park Map",
+    "whereIsWhat": "Where is what?",
+    "demoVersion": "📱 Demo Version 0.01",
+    "demoText": "This is a web app for demonstration purposes. The full app will be available in app stores in future developments.",
+    "secureMemories": "Secure your memories in the best quality",
+    "qrCodeDetected": "QR Code detected!",
+    "loadingPhotos": "Loading your photos...",
+    "cameraPermissionError": "Camera permission could not be verified.",
+    "cameraAccessRequired": "Camera Access Required",
+    "cameraAccessDescription": "To scan QR codes, we need access to your camera. This is necessary to find your photos from the summer toboggan run.",
+    "grantPermission": "Grant Permission",
+    "invalidQRCode": "Invalid QR Code",
+    "invalidQRCodeDescription": "The scanned code is not valid. Please try again or contact staff.",
+    "scanAgain": "Scan Again",
+    "qrCodeSuccessfullyScanned": "QR Code successfully scanned!",
+    "sessionID": "Session ID: {{id}}...",
+    "scanError": "Scan Error",
+    "scanErrorDescription": "QR code could not be recognized. Make sure the code is clearly visible and not damaged.",
+    "tryAgain": "Try Again",
+    "scanQRTitle": "Scan QR Code",
+    "scanInstruction": "Point the camera at the QR code at your seat or at the exit",
+    "switchCamera": "Switch Camera",
+    "problemsScanning": "Problems scanning?",
+    "addedToCart": "Added to cart!",
+    "photoPassAddedDescription": "The Day Photo Pass has been added to your cart.",
+    "ticketAddedDescription": "{{ticketName}} for {{date}} has been added to your cart.",
+    "continueShopping": "Continue Shopping",
+    "toCart": "To Cart"
+  },
+  "photoPass": {
+    "title": "🌟 Day Photo Pass",
+    "price": "€14.99",
+    "oneTimePrice": "One-time daily price",
+    "whatYouGet": "What you get:",
+    "unlimitedPhotos": "Unlimited Photos",
+    "unlimitedPhotosDescription": "All your rides today - no individual purchase",
+    "instantDownload": "Instant Download",
+    "instantDownloadDescription": "High-resolution images directly available",
+    "save": "Save up to 50%",
+    "saveDescription": "Already cheaper than individual purchase at 3+ photos",
+    "noWaitTime": "No Wait Time",
+    "noWaitTimeDescription": "All images instantly in your gallery",
+    "howItWorks": "How it works:",
+    "step1": "1. Buy Day Photo Pass",
+    "step2": "2. Scan QR code as usual",
+    "step3": "3. All photos automatically unlocked",
+    "step4": "4. Download and share directly",
+    "validity": "Validity:",
+    "validityText": "The pass is valid today until 11:59 PM and covers all your rides.",
+    "addToCart": "Add to Cart • €14.99",
+    "decideLater": "Decide Later"
+  },
+  "tickets": {
+    "title": "🎢 Park Tickets",
+    "selectType": "Select Ticket Type:",
+    "adult": "Adult Day Ticket",
+    "adultDescription": "Single ticket for adults 13 years and older",
+    "family": "Family Ticket (2+2)",
+    "familyDescription": "2 Adults + 2 Children (4-12 years)",
+    "season": "Adult Season Pass",
+    "seasonDescription": "Unlimited access for the entire season",
+    "selectDate": "Select Date:",
+    "today": "Today",
+    "included": "What's included:",
+    "allAttractions": "All Attractions",
+    "allAttractionsDescription": "Access to all rides in the park",
+    "showsIncluded": "Shows Included",
+    "showsIncludedDescription": "All performances at no extra cost",
+    "freeParking": "Free Parking",
+    "freeParkingDescription": "Parking spaces right at the entrance",
+    "familyFriendly": "Family Friendly",
+    "familyFriendlyDescription": "Attractions for all age groups",
+    "summary": "Summary:",
+    "date": "Date: {{date}}",
+    "addToCart": "Add to Cart • €{{price}}"
+  },
+  "closingModal": {
+    "title": "🚀 We're closing soon!",
+    "lastChance": "Last chance on Thunder Mountain!",
+    "description": "Ride our spectacular roller coaster one more time or chase your speed record on the Speed Racer!",
+    "bookTicket": "Book your ticket for next time",
+    "bookTicketDescription": "Secure your spot for the next visit now",
+    "newsletter": "Subscribe to newsletter & save! 💰",
+    "newsletterDescription": "Subscribe to our newsletter and receive 10% off family tickets\n\nWe'll keep you updated on:\n• New attractions & events\n• Exclusive offers & discounts\n• Season highlights & shows",
+    "subscribeNewsletter": "Subscribe to Newsletter (-10%)",
+    "bookTicketForNext": "Book ticket for next time",
+    "goodbye": "Goodbye! 👋",
+    "subscribed": "Newsletter subscribed! 🎉",
+    "subscribedDescription": "Thank you! You will shortly receive a confirmation email with your 10% discount code for family tickets.",
+    "perfect": "Perfect!"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Your stats today",
+    "ridesToday": "Rides today",
+    "personalRecord": "Personal record!",
+    "bestTime": "Best time",
+    "newBestTime": "New best time!",
+    "topSpeed": "Top speed",
+    "achievedToday": "Achieved today",
+    "dailyRanking": "Daily ranking",
+    "ofRiders": "of {{count}} riders",
+    "newBestTimeAchievement": "New best time!",
+    "improvedBestTime": "You have improved your personal best time",
+    "leaderboard": "Daily Ranking",
+    "you": "You",
+    "nextGoal": "Next goal",
+    "nextGoalDescription": "Only 0.3 km/h to rank 6! You can do it! 🚀",
+    "startNewRide": "Start New Ride",
+    "myRidesToday": "My rides (today)",
+    "allRides": "All rides",
+    "noRidesToday": "No rides today yet"
+  },
+  "rides": {
+    "title": "Capture Ride",
+    "subtitle": "Save your ride",
+    "captureNow": "I just rode",
+    "manualTime": "Enter time manually",
+    "selectTime": "Select time",
+    "selectDate": "Select date",
+    "noteOptional": "Note (optional)",
+    "notePlaceholder": "e.g. Ride #3, Car 2...",
+    "saveTime": "Save time",
+    "rideSaved": "Ride saved",
+    "rideDeleted": "Ride deleted",
+    "deleteRide": "Delete ride",
+    "deleteConfirm": "Really delete ride?",
+    "delete": "Delete",
+    "myRides": "My Rides",
+    "noRides": "No rides yet",
+    "noRidesDescription": "Capture your first ride!",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "now": "Now",
+    "manual": "Manual",
+    "qrFuture": "QR scan coming later (App/Deep Link)",
+    "timeFormat": "HH:MM"
+  },
+  "gallery": {
+    "title": "Your Photos",
+    "subtitle": "{{filtered}} of {{total}} photos",
+    "all": "All",
+    "favorites": "Favorites",
+    "socialMedia": "Social Media",
+    "pleaseLogin": "Please log in to see your photos",
+    "login": "Log In",
+    "preview": "PREVIEW",
+    "speed": "Speed: {{speed}} km/h",
+    "buyPhoto": "Buy Photo",
+    "wantToBuyPhoto": "Do you want to buy this photo?",
+    "buyNow": "Buy Now",
+    "photoAddedToCart": "Photo from {{timestamp}} has been added to your cart."
+  },
+  "socialMedia": {
+    "title": "📸 Share your photos!",
+    "subtitle": "Share your adventure moments with the world and win great prizes!",
+    "tagUs": "Tag us",
+    "tagUsDescription": "@adventureland_park in your post",
+    "followUs": "Follow us",
+    "followUsDescription": "for the latest updates & events",
+    "useHashtags": "Use Hashtags",
+    "useHashtagsDescription": "#Liftpictures #AdventureLand #Adventure",
+    "monthlyPrize": "Monthly Prize!",
+    "monthlyPrizeDescription": "2x Family tickets for the next visit",
+    "choosePlatform": "Choose your platform:",
+    "instagram": "Instagram",
+    "instagramAction": "Open Instagram and share your photo with #Liftpictures #AdventureLand",
+    "facebook": "Facebook",
+    "facebookAction": "Share your adventure photos on Facebook and tag @adventureland_park!",
+    "twitter": "Twitter",
+    "twitterAction": "Tweet your photos with #Liftpictures #AdventureLand and tag @adventureland_park!",
+    "whatsapp": "WhatsApp",
+    "whatsappAction": "Share your photos via WhatsApp with friends and family!",
+    "telegram": "Telegram",
+    "telegramAction": "Share your photos via Telegram!",
+    "tiktok": "TikTok",
+    "tiktokAction": "Create a cool TikTok video with #Liftpictures #AdventureLand!",
+    "newsletterButton": "📧 Subscribe to newsletter for exclusive prize chances",
+    "newsletterSubscribed": "Thank you for your interest! You'll soon receive more information about giveaways."
+  },
+  "cart": {
+    "title": "Cart",
+    "subtitle": "{{count}} {{unit}} • €{{total}}",
+    "photo": "photo",
+    "photos": "photos",
+    "yourSelectedPhotos": "Your selected photos",
+    "empty": "Cart is empty",
+    "emptyDescription": "Add photos from the gallery to purchase them",
+    "browseGallery": "To Gallery",
+    "removePhoto": "Remove photo",
+    "removePhotoDescription": "Do you want to remove this photo from the cart?",
+    "remove": "Remove",
+    "unlimitedPhotosToday": "Unlimited photos today",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "processingFee": "Processing fee",
+    "total": "Total",
+    "paymentMethod": "Payment Method",
+    "creditCard": "Credit Card",
+    "securePayment": "Secure payment with 256-bit SSL encryption",
+    "buyNow": "Buy Now • €{{total}}",
+    "processing": "Processing...",
+    "clearCart": "Clear Cart",
+    "clearCartConfirm": "Do you want to remove all photos from the cart?",
+    "clearCartButton": "Clear Cart",
+    "emptyCart": "Cart empty",
+    "emptyCartDescription": "Add photos to your cart to continue.",
+    "paymentSuccessful": "Payment successful!",
+    "paymentSuccessfulDescription": "Your photos have been purchased and will be downloaded."
+  },
+  "profile": {
+    "title": "Profile",
+    "rides": "Rides",
+    "memberSince": "Member since",
+    "account": "Account",
+    "editProfile": "Edit Profile",
+    "editProfileDescription": "Change name and email",
+    "notifications": "Notifications",
+    "notificationsDescription": "Manage push notifications",
+    "data": "Data",
+    "downloadAllPhotos": "Download all photos",
+    "downloadAllPhotosDescription": "Your complete collection",
+    "sharePhotos": "Share photos",
+    "sharePhotosDescription": "With friends and family",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "privacyDescription": "Read privacy policy",
+    "helpAndSupport": "Help & Support",
+    "helpAndSupportDescription": "FAQ and contact",
+    "version": "Liftpictures v1.0.0",
+    "copyright": "© 2024 Liftpictures. All rights reserved.",
+    "downloadStarted": "Download started",
+    "comingSoon": "Coming Soon"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Create Account",
+    "signInDescription": "Sign in to see your photos",
+    "signUpDescription": "Create an account for all your rides",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "password": "Password",
+    "signInButton": "Sign In",
+    "signUpButton": "Create Account",
+    "alreadyHaveAccount": "Already have an account? ",
+    "noAccount": "Don't have an account yet? ",
+    "register": "Register",
+    "terms": "By signing in, you agree to our\nTerms of Service and Privacy Policy.",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "fillAllFields": "Please fill in all fields.",
+    "authFailed": "Authentication failed",
+    "unexpectedError": "An unexpected error occurred."
+  },
+  "tabs": {
+    "home": "Home",
+    "gallery": "Gallery",
+    "cart": "Cart",
+    "dashboard": "Dashboard",
+    "profile": "Profile"
+  },
+  "info": {
+    "title": "Park Information",
+    "welcomeTitle": "🎢 Adventure Land",
+    "welcomeSubtitle": "Your family amusement park in the heart of Germany",
+    "welcomeText": "Since 1987, we have been providing unforgettable experiences for the whole family. With over 30 attractions, shows and dining options, there's something for everyone!",
+    "contact": {
+      "title": "📞 Contact & Address",
+      "parkName": "Adventure Land Amusement Park",
+      "address1": "Abenteuer Allee 15",
+      "address2": "12345 Funstadt",
+      "hotline": "Hotline: +49 (0)800 123 456 789",
+      "email": "Email: info@adventureland-park.de",
+      "website": "Web: www.adventureland-park.de",
+      "emergency": "Park Emergency: +49 (0)800 123 456 911"
+    },
+    "hours": {
+      "title": "🕒 Opening Hours",
+      "regular": "REGULAR SEASON (April - October):",
+      "weekdays": "Monday - Friday: 10:00 AM - 6:00 PM",
+      "weekends": "Saturday - Sunday: 9:00 AM - 8:00 PM",
+      "holidays": "Public Holidays: 9:00 AM - 8:00 PM",
+      "highSeason": "HIGH SEASON (July - August):",
+      "highSeasonHours": "Daily: 9:00 AM - 9:00 PM",
+      "winter": "WINTER SEASON (November - March):",
+      "winterHours": "Weekends only: 11:00 AM - 5:00 PM",
+      "lastEntry": "Last entry: 1 hour before closing"
+    },
+    "prices": {
+      "title": "💶 Admission Prices",
+      "adults": "ADULTS (13 years and up): €24.90",
+      "children": "CHILDREN (4-12 years): €19.90",
+      "seniors": "SENIORS (65+): €22.90",
+      "toddlers": "TODDLERS (under 4): FREE",
+      "familyTickets": "FAMILY TICKETS:",
+      "familyStandard": "Standard Family (2+2): €79.90",
+      "familyLarge": "Large Family (2+3): €94.90",
+      "familyXXL": "XXL Family (2+4): €109.90",
+      "seasonPasses": "SEASON PASSES:",
+      "seasonAdult": "Adults: €89.90",
+      "seasonChild": "Children: €69.90"
+    },
+    "transport": {
+      "title": "🚗 Directions & Parking",
+      "car": "BY CAR:",
+      "highway": "Highway A7, exit \"Funstadt-Ost\"",
+      "directions": "Then follow signs for 5km",
+      "gps": "GPS: Abenteuer Allee 15, 12345 Funstadt",
+      "parking": "PARKING:",
+      "parkingSpots": "500 free parking spaces",
+      "disabledParking": "50 disabled parking spaces (directly at entrance)",
+      "familyParking": "20 family parking spaces (wide spots)",
+      "publicTransport": "PUBLIC TRANSPORT:",
+      "bus": "Bus line 42: Stop \"Adventure Land\"",
+      "train": "S-Bahn S3: Station Funstadt + Bus 42",
+      "shuttle": "Shuttle service from station (€2 per person)"
+    },
+    "accessibility": {
+      "title": "♿ Accessibility",
+      "wheelchair": "WHEELCHAIR ACCESSIBLE FACILITIES:",
+      "wheelchairPaths": "✅ All main paths wheelchair accessible",
+      "wheelchairAttractions": "✅ 15 wheelchair accessible attractions",
+      "wheelchairToilets": "✅ Disabled toilets in every area",
+      "wheelchairRental": "✅ Free wheelchair rental (subject to availability)",
+      "visuallyImpaired": "FOR THE VISUALLY IMPAIRED:",
+      "guideDogs": "✅ Guide dogs welcome",
+      "tactileSystems": "✅ Tactile guidance systems",
+      "audioGuides": "✅ Audio guides available",
+      "hearingImpaired": "FOR THE HEARING IMPAIRED:",
+      "inductionLoops": "✅ Induction loops at service points",
+      "signLanguage": "✅ Sign language interpreters (on request)"
+    },
+    "rules": {
+      "title": "📋 Park Rules",
+      "notAllowed": "NOT PERMITTED:",
+      "noFood": "• Outside food and beverages",
+      "noGlass": "• Glass bottles and cans",
+      "noPets": "• Pets (except service animals)",
+      "noWeapons": "• Weapons and dangerous items",
+      "noAlcohol": "• Outside alcohol",
+      "noDrones": "• Drones and model aircraft",
+      "photography": "PHOTOGRAPHY:",
+      "privateAllowed": "✅ Private photos and videos allowed",
+      "commercialNo": "❌ Commercial use requires permission",
+      "noFlash": "❌ Flash photography on rides",
+      "health": "HEALTH:",
+      "pacemaker": "• Pacemakers: Avoid certain attractions",
+      "pregnancy": "• Pregnancy: Caution on rides",
+      "heightRequirement": "• Note height requirements (90cm - 140cm depending on attraction)"
+    },
+    "emergency": {
+      "title": "🚨 Park Emergency",
+      "description": "In case of medical emergencies or other issues, please contact immediately:",
+      "number": "📞 +49 (0)800 123 456 911",
+      "location": "First aid stations are located in Family Area (main station), Thrill Zone and Adventure Land."
+    },
+    "footer": "Adventure Land - Where dreams come true! 🎢✨"
+  },
+  "news": {
+    "title": "News",
+    "categories": {
+      "attraction": "Attractions",
+      "event": "Events",
+      "food": "Food & Dining",
+      "general": "General"
+    },
+    "badges": {
+      "new": "NEW"
+    },
+    "items": {
+      "thunderMountain": {
+        "title": "NEW ROLLER COASTER \"Thunder Mountain\" opens!",
+        "date": "August 1, 2024",
+        "content": "The spectacular new roller coaster \"Thunder Mountain\" is now open! At 65 meters high and speeds up to 85 km/h, it offers pure thrills. First test riders are thrilled with the 7 loops and 360-degree corkscrew."
+      },
+      "summerFest": {
+        "title": "Summer Festival July 15-17",
+        "date": "July 10, 2024",
+        "content": "Our big summer festival is coming up! Three days full of live music, street performers and a spectacular fireworks display every evening at 10:00 PM. Special food trucks offer international cuisine."
+      },
+      "pizzaStation": {
+        "title": "Pizza Station \"Mama Mia\" newly opened",
+        "date": "June 25, 2024",
+        "content": "In the heart of Thrill Zone, our new pizza station has opened! Authentic Italian pizzas from the stone oven, prepared by real Italian chefs. Try the specialty \"Thunder Mountain\" with spicy salami!"
+      },
+      "familyDiscount": {
+        "title": "Family discount extended",
+        "date": "June 20, 2024",
+        "content": "Due to high demand, we are extending our family discount! Families with 2 adults and 2 children pay only €80 instead of €96. Valid until the end of August 2024."
+      },
+      "circus": {
+        "title": "Circus \"Fantasia\" visits the park",
+        "date": "June 15, 2024",
+        "content": "The famous Circus \"Fantasia\" will be with us all summer! Shows daily at 2:00 PM and 4:30 PM in the large amphitheater. Acrobatics, clowns and wild animals provide entertainment for the whole family."
+      },
+      "newParking": {
+        "title": "New parking in Sector C",
+        "date": "June 5, 2024",
+        "content": "We have opened 200 additional parking spaces in the new Sector C. Free parking for all visitors, only a 3-minute walk to the main entrance. Disabled parking spaces available directly at the entrance."
+      }
+    },
+    "footer": "Follow us for more updates!"
+  },
+  "menu": {
+    "title": "Menu",
+    "intro": {
+      "title": "Welcome to our dining!",
+      "text": "From authentic Italian pizza to German classics - we have something for every taste!"
+    },
+    "badges": {
+      "new": "NEW",
+      "popular": "POPULAR"
+    },
+    "categories": {
+      "pizza": "Pizza Station \"Mama Mia\"",
+      "burgers": "Burger Grill \"Big Bite\"",
+      "german": "Bratwurst Stand",
+      "healthy": "Healthy Corner",
+      "sweets": "Sweets & Drinks"
+    },
+    "items": {
+      "pizzaMargherita": {
+        "name": "Pizza Margherita",
+        "description": "Tomato sauce, mozzarella, basil"
+      },
+      "pizzaSalami": {
+        "name": "Pizza Salami",
+        "description": "With Italian salami"
+      },
+      "pizzaQuattro": {
+        "name": "Pizza Quattro Stagioni",
+        "description": "Four seasons with mushrooms, ham, artichokes"
+      },
+      "pizzaThunder": {
+        "name": "Pizza Thunder Mountain",
+        "description": "Spicy salami, jalapeños, hot sauce"
+      },
+      "pizzaVeggie": {
+        "name": "Pizza Vegetarian",
+        "description": "Bell peppers, zucchini, eggplant, feta"
+      },
+      "classicBurger": {
+        "name": "Classic Burger",
+        "description": "With fries and coleslaw"
+      },
+      "cheeseburger": {
+        "name": "Cheeseburger Deluxe",
+        "description": "Double cheese, bacon, onions"
+      },
+      "bbqBurger": {
+        "name": "BBQ Bacon Burger",
+        "description": "BBQ sauce, roasted onions, crispy bacon"
+      },
+      "veggieBurger": {
+        "name": "Veggie Burger",
+        "description": "Homemade veggie patty"
+      },
+      "chickenBurger": {
+        "name": "Chicken Burger",
+        "description": "Grilled chicken breast, avocado"
+      },
+      "bratwurst": {
+        "name": "Bratwurst with Roll",
+        "description": "With mustard or ketchup"
+      },
+      "currywurst": {
+        "name": "Currywurst with Fries",
+        "description": "With homemade curry sauce"
+      },
+      "thuringer": {
+        "name": "Thüringer Roster",
+        "description": "Original Thuringian bratwurst"
+      },
+      "weisswurst": {
+        "name": "Weißwurst",
+        "description": "With sweet mustard and pretzel"
+      },
+      "caesarSalad": {
+        "name": "Caesar Salad",
+        "description": "Romaine lettuce, parmesan, croutons, Caesar dressing"
+      },
+      "chickenWrap": {
+        "name": "Chicken Wrap",
+        "description": "Grilled chicken, vegetables, yogurt dressing"
+      },
+      "quinoaBowl": {
+        "name": "Quinoa Bowl",
+        "description": "Quinoa, avocado, roasted vegetables"
+      },
+      "fruitSalad": {
+        "name": "Fruit Salad",
+        "description": "Seasonal fruits"
+      },
+      "smoothieBowl": {
+        "name": "Smoothie Bowl",
+        "description": "Acai, berries, granola"
+      },
+      "softIceCream": {
+        "name": "Soft Ice Cream",
+        "description": "Vanilla, chocolate or strawberry"
+      },
+      "churros": {
+        "name": "Churros",
+        "description": "With cinnamon and sugar"
+      },
+      "almonds": {
+        "name": "Roasted Almonds",
+        "description": "Freshly roasted"
+      },
+      "soda": {
+        "name": "Cola/Fanta 0.5L",
+        "description": ""
+      },
+      "water": {
+        "name": "Water 0.5L",
+        "description": ""
+      },
+      "beer": {
+        "name": "Beer 0.4L",
+        "description": "Cold draft pilsner"
+      },
+      "coffee": {
+        "name": "Coffee",
+        "description": "Espresso, cappuccino, latte"
+      },
+      "hotChocolate": {
+        "name": "Hot Chocolate",
+        "description": "With whipped cream and marshmallows"
+      }
+    },
+    "footer": {
+      "title": "Dining Hours",
+      "weekdays": "Mon-Fri: 10:00 AM - 5:30 PM",
+      "weekends": "Sat-Sun: 9:00 AM - 7:30 PM",
+      "summer": "July/August: daily until 8:30 PM",
+      "note": "All prices include VAT"
+    }
+  },
+  "map": {
+    "title": "Park Map",
+    "overview": {
+      "title": "🗺️ Adventure Land Overview",
+      "text": "Our 85-hectare park is divided into three themed areas. Use the free park app for GPS navigation or follow the colored signs on site.",
+      "attractions": "Attractions",
+      "restaurants": "Restaurants",
+      "hectares": "Hectares"
+    },
+    "sections": {
+      "parkAreas": "🏰 Park Areas",
+      "gastronomy": "🍽️ Dining",
+      "services": "🛠️ Services & Facilities",
+      "shows": "🎭 Shows & Performances"
+    },
+    "areas": {
+      "thrill": {
+        "title": "Thrill Zone (North)",
+        "description": "For adrenaline junkies and thrill seekers",
+        "attractions": {
+          "thunderMountain": "🎢 Thunder Mountain (Roller Coaster) - NEW! 65m high, 85 km/h",
+          "wildEagle": "🗼 Wild Eagle (Drop Tower) - 45m free fall",
+          "speedRacer": "🏁 Speed Racer (Go-Kart Track) - 800m circuit",
+          "tornado": "🌪️ Tornado Twister (Spinning Coaster) - 7 loops",
+          "skyShot": "🎯 Sky Shot (Catapult) - 60m in 2 seconds",
+          "ghost": "🎭 Ghost Manor (Haunted House) - For the brave only!"
+        }
+      },
+      "family": {
+        "title": "Family Area (Center)",
+        "description": "Fun for the whole family",
+        "attractions": {
+          "carousel": "🎠 Fairy Tale Carousel - Nostalgic chain carousel",
+          "bumperCars": "🚗 Bumper Cars Deluxe - Bumper cars with LED lighting",
+          "miniCoaster": "🐉 Mini Roller Coaster \"Dragon Ride\" - Perfect for kids",
+          "ferrisWheel": "🎡 Ferris Wheel \"Sky View\" - 45m high with panoramic view",
+          "waterBattle": "💦 Water Battle \"Splash Zone\" - Refreshment guaranteed!",
+          "train": "🚂 Park Railway \"Adventure Express\" - 15min round trip",
+          "amphitheater": "🎪 Amphitheater - Shows daily at 2:00 PM & 4:30 PM"
+        }
+      },
+      "adventure": {
+        "title": "Adventure Land (South)",
+        "description": "Experience nature and adventure",
+        "attractions": {
+          "climbingPark": "🧗 Climbing Park \"Tree Top\" - 15 different courses",
+          "summerToboggan": "🛷 Summer Toboggan \"Alpine Rush\" - 1.2km downhill",
+          "playground": "🏰 Adventure Playground - 2000m² climbing fun",
+          "pettingZoo": "🐄 Petting Zoo \"Happy Farm\" - Goats, ponies, rabbits",
+          "naturePath": "🌿 Nature Trail - Discover flora and fauna",
+          "archery": "🏹 Archery - Supervised (ages 8+)",
+          "fishing": "🎣 Fishing Pond - Peaceful and relaxing"
+        }
+      }
+    },
+    "restaurants": {
+      "mamaMia": "Pizza \"Mama Mia\"",
+      "bigBite": "Burger Grill \"Big Bite\"",
+      "bratwurst": "Bratwurst Stand",
+      "healthy": "Healthy Corner",
+      "cafe": "Café \"Sweet Dreams\"",
+      "biergarten": "Beer Garden \"Gemütlich\""
+    },
+    "services": {
+      "firstAidMain": "First Aid (Main Station)",
+      "firstAidThrill": "First Aid (Branch)",
+      "babyChanging": "Baby Changing Rooms",
+      "souvenirShop": "Souvenir Shop \"Memories\"",
+      "photoShop": "Photo Shop \"Smile\"",
+      "wheelchairRental": "Wheelchair Rental",
+      "strollerRental": "Stroller Rental",
+      "lostAndFound": "Lost and Found"
+    },
+    "locations": {
+      "thrillZone": "Thrill Zone",
+      "familyArea": "Family Area",
+      "adventureLand": "Adventure Land",
+      "mainEntrance": "Main Entrance",
+      "allAreas": "All Areas"
+    },
+    "shows": {
+      "circus": {
+        "name": "Circus \"Fantasia\"",
+        "location": "Amphitheater"
+      },
+      "fairytale": {
+        "name": "Fairy Tale Theater",
+        "location": "Family Area"
+      },
+      "magic": {
+        "name": "Magic Show \"Magic Mike\"",
+        "location": "Thrill Zone"
+      },
+      "safari": {
+        "name": "Animal Show \"Safari\"",
+        "location": "Adventure Land"
+      }
+    },
+    "tips": {
+      "title": "💡 Insider Tips",
+      "tip1": "• Visit Thunder Mountain early morning - shorter wait times!",
+      "tip2": "• The Ferris wheel offers the best panoramic view at sunset",
+      "tip3": "• Free park app with live wait times available",
+      "tip4": "• Family Fast Pass for €15 - skip the queues",
+      "tip5": "• Picnicking allowed in Adventure Land area",
+      "tip6": "• Free WiFi available throughout the park"
+    },
+    "footer": "Have questions about directions?\nOur staff is happy to help! 🗺️"
+  }
+}
