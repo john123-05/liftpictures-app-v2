@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '@/lib/i18n';
 
-type Language = 'de' | 'en' | 'es';
+type Language = 'de' | 'en' | 'es' | 'fr' | 'it' | 'nl';
 
 interface LanguageContextType {
   language: Language;
@@ -22,7 +22,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     loadSavedLanguage();
 
     const handleLanguageChange = (lng: string) => {
-      if (lng === 'de' || lng === 'en' || lng === 'es') {
+      if (lng === 'de' || lng === 'en' || lng === 'es' || lng === 'fr' || lng === 'it' || lng === 'nl') {
         setLanguage(lng as Language);
       }
     };
@@ -37,7 +37,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const loadSavedLanguage = async () => {
     try {
       const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
-      if (savedLanguage && (savedLanguage === 'de' || savedLanguage === 'en' || savedLanguage === 'es')) {
+      if (savedLanguage && (savedLanguage === 'de' || savedLanguage === 'en' || savedLanguage === 'es' || savedLanguage === 'fr' || savedLanguage === 'it' || savedLanguage === 'nl')) {
         setLanguage(savedLanguage as Language);
         await i18n.changeLanguage(savedLanguage);
       }

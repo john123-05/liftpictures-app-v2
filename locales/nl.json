@@ -1,0 +1,889 @@
+{
+  "common": {
+    "liftpictures": "Liftfoto's",
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "cancel": "Annuleren",
+    "ok": "OK",
+    "continue": "Doorgaan",
+    "back": "Rug",
+    "or": "of",
+    "info": "Info"
+  },
+  "home": {
+    "welcome": "Welkom terug, {{name}}!",
+    "photosAndMemories": "Foto's en herinneringen",
+    "scanQR": "Rit vastleggen",
+    "processing": "Verwerken...",
+    "findYourPhotos": "Net gereden? Bespaar tijd",
+    "toGallery": "Naar Galerij",
+    "purchaseOptions": "Aankoopopties",
+    "dayPhotoPass": "Dagfotopas",
+    "parkTickets": "Parkkaartjes",
+    "from": "van",
+    "parkInfo": "Parkinfo",
+    "news": "Nieuws",
+    "whatsNew": "Wat is er nieuw?",
+    "menu": "Menu",
+    "restaurantAndSnacks": "Restaurant en snacks",
+    "infos": "Info",
+    "openingHoursEtc": "Openingstijden enz.",
+    "parkMap": "Parkkaart",
+    "whereIsWhat": "Waar is wat?",
+    "demoVersion": "📱 Demoversie 0.01",
+    "demoText": "Dit is een webapp voor demonstratiedoeleinden. Bij toekomstige ontwikkelingen zal de volledige app beschikbaar zijn in appstores.",
+    "secureMemories": "Beveilig uw herinneringen in de beste kwaliteit",
+    "qrCodeDetected": "QR-code gedetecteerd!",
+    "loadingPhotos": "Uw foto's laden...",
+    "cameraPermissionError": "Cameratoestemming kan niet worden geverifieerd.",
+    "cameraAccessRequired": "Cameratoegang vereist",
+    "cameraAccessDescription": "Om QR-codes te kunnen scannen, hebben wij toegang tot uw camera nodig. Dit is nodig om uw foto's van de zomerrodelbaan te vinden.",
+    "grantPermission": "Toestemming verlenen",
+    "invalidQRCode": "Ongeldige QR-code",
+    "invalidQRCodeDescription": "De gescande code is niet geldig. Probeer het opnieuw of neem contact op met het personeel.",
+    "scanAgain": "Opnieuw scannen",
+    "qrCodeSuccessfullyScanned": "QR-code succesvol gescand!",
+    "sessionID": "Sessie-ID: {{id}}...",
+    "scanError": "Scanfout",
+    "scanErrorDescription": "QR-code kon niet worden herkend. Zorg ervoor dat de code duidelijk zichtbaar en niet beschadigd is.",
+    "tryAgain": "Probeer het opnieuw",
+    "scanQRTitle": "QR-code scannen",
+    "scanInstruction": "Richt de camera op de QR-code bij uw zitplaats of bij de uitgang",
+    "switchCamera": "Camera wisselen",
+    "problemsScanning": "Problemen met scannen?",
+    "addedToCart": "Toegevoegd aan winkelwagen!",
+    "photoPassAddedDescription": "De Dagfotopas is aan uw winkelwagen toegevoegd.",
+    "ticketAddedDescription": "{{ticketName}} voor {{date}} is aan uw winkelwagen toegevoegd.",
+    "continueShopping": "Ga door met winkelen",
+    "toCart": "Naar winkelwagen"
+  },
+  "photoPass": {
+    "title": "🌟 Dagfotopas",
+    "price": "€ 14,99",
+    "oneTimePrice": "Eenmalige dagprijs",
+    "whatYouGet": "Wat je krijgt:",
+    "unlimitedPhotos": "Onbeperkte foto's",
+    "unlimitedPhotosDescription": "Al uw ritten vandaag - geen individuele aankoop",
+    "instantDownload": "Direct downloaden",
+    "instantDownloadDescription": "Hoge resolutie afbeeldingen direct beschikbaar",
+    "save": "Bespaar tot 50%",
+    "saveDescription": "Al goedkoper dan losse aankoop bij 3+ foto's",
+    "noWaitTime": "Geen wachttijd",
+    "noWaitTimeDescription": "Alle afbeeldingen direct in uw galerij",
+    "howItWorks": "Hoe het werkt:",
+    "step1": "1. Koop een Dagfotopas",
+    "step2": "2. Scan de QR-code zoals gewoonlijk",
+    "step3": "3. Alle foto's worden automatisch ontgrendeld",
+    "step4": "4. Direct downloaden en delen",
+    "validity": "Geldigheid:",
+    "validityText": "De pas is vandaag geldig tot 23:59 uur en dekt al je ritten.",
+    "addToCart": "Toevoegen aan winkelwagen • € 14,99",
+    "decideLater": "Beslis later"
+  },
+  "tickets": {
+    "title": "🎢Parktickets",
+    "selectType": "Selecteer tickettype:",
+    "adult": "Dagkaart voor volwassenen",
+    "adultDescription": "Enkele reis voor volwassenen van 13 jaar en ouder",
+    "family": "Familieticket (2+2)",
+    "familyDescription": "2 volwassenen + 2 kinderen (4-12 jaar)",
+    "season": "Seizoenspas voor volwassenen",
+    "seasonDescription": "Onbeperkte toegang gedurende het hele seizoen",
+    "selectDate": "Datum selecteren:",
+    "today": "Vandaag",
+    "included": "Wat is inbegrepen:",
+    "allAttractions": "Alle attracties",
+    "allAttractionsDescription": "Toegang tot alle attracties in het park",
+    "showsIncluded": "Shows inbegrepen",
+    "showsIncludedDescription": "Alle optredens zonder extra kosten",
+    "freeParking": "Gratis parkeren",
+    "freeParkingDescription": "Parkeerplaatsen direct bij de ingang",
+    "familyFriendly": "Gezinsvriendelijk",
+    "familyFriendlyDescription": "Attracties voor alle leeftijdsgroepen",
+    "summary": "Samenvatting:",
+    "date": "Datum: {{date}}",
+    "addToCart": "Voeg toe aan winkelwagen • €{{price}}"
+  },
+  "closingModal": {
+    "title": "🚀 Wij gaan binnenkort sluiten!",
+    "lastChance": "Laatste kans op Thunder Mountain!",
+    "description": "Berijd nog één keer onze spectaculaire achtbaan of jaag je snelheidsrecord na op de Speed ​​Racer!",
+    "bookTicket": "Reserveer je ticket voor de volgende keer",
+    "bookTicketDescription": "Verzeker nu uw plekje voor het volgende bezoek",
+    "newsletter": "Schrijf je in voor de nieuwsbrief en bespaar! 💰",
+    "newsletterDescription": "Schrijf je in voor onze nieuwsbrief en ontvang 10% korting op gezinstickets\n\nWe houden u op de hoogte van:\n• Nieuwe attracties en evenementen\n• Exclusieve aanbiedingen en kortingen\n• Seizoenshoogtepunten en shows",
+    "subscribeNewsletter": "Abonneer u op de nieuwsbrief (-10%)",
+    "bookTicketForNext": "Boek een kaartje voor de volgende keer",
+    "goodbye": "Tot ziens! 👋",
+    "subscribed": "Nieuwsbrief ingeschreven! 🎉",
+    "subscribedDescription": "Bedankt! Je ontvangt binnenkort een bevestigingsmail met je 10% kortingscode voor gezinstickets.",
+    "perfect": "Perfect!"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Jouw statistieken vandaag",
+    "ridesToday": "Ritten vandaag",
+    "personalRecord": "Persoonlijk record!",
+    "bestTime": "Beste tijd",
+    "newBestTime": "Nieuwe beste tijd!",
+    "topSpeed": "Topsnelheid",
+    "achievedToday": "Vandaag bereikt",
+    "dailyRanking": "Dagelijkse ranglijst",
+    "ofRiders": "van {{count}} rijders",
+    "newBestTimeAchievement": "Nieuwe beste tijd!",
+    "improvedBestTime": "Je hebt je persoonlijke beste tijd verbeterd",
+    "leaderboard": "Dagelijkse ranglijst",
+    "you": "Jij",
+    "nextGoal": "Volgende doelpunt",
+    "nextGoalDescription": "Slechts 0,3 km/u naar plaats 6! Je kunt het! 🚀",
+    "startNewRide": "Nieuwe rit starten",
+    "myRidesToday": "Mijn ritten (vandaag)",
+    "allRides": "Alle ritten",
+    "noRidesToday": "Vandaag nog geen ritten"
+  },
+  "rides": {
+    "title": "Rit vastleggen",
+    "subtitle": "Bewaar uw rit",
+    "captureNow": "Ik heb net gereden",
+    "manualTime": "Voer de tijd handmatig in",
+    "selectTime": "Selecteer tijd",
+    "selectDate": "Datum selecteren",
+    "noteOptional": "Opmerking (optioneel)",
+    "notePlaceholder": "bijv. Rit #3, auto 2...",
+    "saveTime": "Bespaar tijd",
+    "rideSaved": "Rit opgeslagen",
+    "rideDeleted": "Rit verwijderd",
+    "deleteRide": "Rit verwijderen",
+    "deleteConfirm": "Rit echt verwijderen?",
+    "delete": "Verwijderen",
+    "myRides": "Mijn ritten",
+    "noRides": "Nog geen ritten",
+    "noRidesDescription": "Leg je eerste rit vast!",
+    "today": "Vandaag",
+    "yesterday": "Gisteren",
+    "now": "Nu",
+    "manual": "Handmatig",
+    "qrFuture": "QR-scan komt later (App/Deep Link)",
+    "timeFormat": "UU:MM"
+  },
+  "gallery": {
+    "title": "Jouw foto's",
+    "subtitle": "{{filtered}} van {{total}} foto's",
+    "all": "Alle",
+    "favorites": "Favorieten",
+    "socialMedia": "Sociale media",
+    "pleaseLogin": "Log in om uw foto's te bekijken",
+    "login": "Inloggen",
+    "preview": "VOORBEELD",
+    "speed": "Snelheid: {{speed}} km/u",
+    "buyPhoto": "Koop foto",
+    "wantToBuyPhoto": "Wil je deze foto kopen?",
+    "buyNow": "Koop nu",
+    "photoAddedToCart": "Foto van {{timestamp}} is aan uw winkelwagen toegevoegd.",
+    "loginFirst": "Meld u eerst aan",
+    "favoriteSaveFailed": "Kan favoriet niet opslaan",
+    "addedToCartTitle": "Toegevoegd aan winkelwagen",
+    "alreadyInCartTitle": "Deze afbeelding bevindt zich al in de winkelwagen",
+    "toCartButton": "Ga naar winkelwagen",
+    "downloadStarting": "Het downloaden van afbeeldingen is gestart",
+    "permissionRequiredTitle": "Toestemming vereist",
+    "permissionRequiredDescription": "Geef toegang tot uw foto's/galerij.",
+    "savedToGallery": "Afbeelding is opgeslagen in je galerij",
+    "downloadFailed": "Afbeelding kon niet worden gedownload",
+    "shareMessageSingle": "Bekijk mijn foto!",
+    "shareMessageMultiple": "Bekijk mijn foto's!",
+    "selectAtLeastOneImage": "Selecteer minimaal één afbeelding."
+  },
+  "socialMedia": {
+    "title": "📸 Deel uw foto's!",
+    "subtitle": "Deel jouw avontuurlijke momenten met de wereld en win geweldige prijzen!",
+    "tagUs": "Tag ons",
+    "tagUsDescription": "@adventureland_park in je bericht",
+    "followUs": "Volg ons",
+    "followUsDescription": "voor de laatste updates en evenementen",
+    "useHashtags": "Gebruik hashtags",
+    "useHashtagsDescription": "#Liftpictures #AvontuurLand #Avontuur",
+    "monthlyPrize": "Maandelijkse prijs!",
+    "monthlyPrizeDescription": "2x Familietickets voor het volgende bezoek",
+    "choosePlatform": "Kies uw platform:",
+    "instagram": "Instagram",
+    "instagramAction": "Open Instagram en deel je foto met #Liftpictures #AdventureLand",
+    "facebook": "Facebook",
+    "facebookAction": "Deel je avonturenfoto's op Facebook en tag @adventureland_park!",
+    "twitter": "Twitteren",
+    "twitterAction": "Tweet je foto's met #Liftpictures #AdventureLand en tag @adventureland_park!",
+    "whatsapp": "WhatsAppen",
+    "whatsappAction": "Deel uw foto's via WhatsApp met vrienden en familie!",
+    "telegram": "Telegram",
+    "telegramAction": "Deel uw foto's via Telegram!",
+    "tiktok": "TikTok",
+    "tiktokAction": "Maak een coole TikTok-video met #Liftpictures #AdventureLand!",
+    "newsletterButton": "📧 Abonneer u op de nieuwsbrief voor exclusieve prijskansen",
+    "newsletterSubscribed": "Bedankt voor uw interesse! Binnenkort ontvang je meer informatie over winacties."
+  },
+  "cart": {
+    "title": "Winkelwagen",
+    "subtitle": "{{count}} {{unit}} • €{{total}}",
+    "photo": "foto",
+    "photos": "foto's",
+    "yourSelectedPhotos": "Uw geselecteerde foto's",
+    "empty": "Winkelwagen is leeg",
+    "emptyDescription": "Voeg foto's uit de galerij toe om ze te kopen",
+    "browseGallery": "Naar Galerij",
+    "removePhoto": "Foto verwijderen",
+    "removePhotoDescription": "Wil je deze foto uit de winkelwagen verwijderen?",
+    "remove": "Verwijderen",
+    "unlimitedPhotosToday": "Onbeperkt foto's vandaag",
+    "orderSummary": "Besteloverzicht",
+    "subtotal": "Subtotaal",
+    "processingFee": "Verwerkingskosten",
+    "total": "Totaal",
+    "paymentMethod": "Betaalmethode",
+    "creditCard": "Creditcard",
+    "securePayment": "Veilige betaling met 256-bit SSL-codering",
+    "buyNow": "Koop nu • €{{total}}",
+    "processing": "Verwerken...",
+    "clearCart": "Wis winkelwagen",
+    "clearCartConfirm": "Wil je alle foto's uit de winkelwagen verwijderen?",
+    "clearCartButton": "Wis winkelwagen",
+    "emptyCart": "Winkelwagen leeg",
+    "emptyCartDescription": "Voeg foto's toe aan uw winkelwagen om door te gaan.",
+    "paymentSuccessful": "Betaling succesvol!",
+    "paymentSuccessfulDescription": "Uw foto's zijn gekocht en worden gedownload.",
+    "loginRequired": "U moet ingelogd zijn om door te gaan.",
+    "checkoutStartFailed": "Kan de betaling niet starten.",
+    "paymentCancelledTitle": "Betaling geannuleerd",
+    "paymentCancelledDescription": "Uw artikelen blijven in de winkelwagen.",
+    "photosUnlocked": "Je foto's zijn ontgrendeld!",
+    "checkoutErrorWithMessage": "Er is een fout opgetreden: {{message}}",
+    "unknownError": "Onbekende fout"
+  },
+  "profile": {
+    "title": "Profiel",
+    "rides": "Ritten",
+    "memberSince": "Lid sinds",
+    "account": "Rekening",
+    "editProfile": "Profiel bewerken",
+    "editProfileDescription": "Wijzig naam en e-mailadres",
+    "notifications": "Meldingen",
+    "notificationsDescription": "Beheer pushmeldingen",
+    "data": "Gegevens",
+    "downloadAllPhotos": "Alle foto's downloaden",
+    "downloadAllPhotosDescription": "Je volledige collectie",
+    "sharePhotos": "Deel foto's",
+    "sharePhotosDescription": "Met vrienden en familie",
+    "legal": "Legaal",
+    "privacy": "Privacy",
+    "privacyDescription": "Lees privacybeleid",
+    "helpAndSupport": "Hulp en ondersteuning",
+    "helpAndSupportDescription": "Veelgestelde vragen en contact",
+    "version": "Liftfoto's v1.0.0",
+    "copyright": "© 2024 Liftfoto's. Alle rechten voorbehouden.",
+    "downloadStarted": "Het downloaden is gestart",
+    "comingSoon": "Binnenkort beschikbaar",
+    "demoAccess": "Toegang tot demo's",
+    "logoutTitle": "Uitloggen",
+    "logoutDescription": "Weet u zeker dat u wilt uitloggen? U moet uw wachtwoord opnieuw invoeren.",
+    "logoutButton": "Uitloggen",
+    "logoutSubtitle": "Sluit de demotoegang af",
+    "avatar": {
+      "permissionRequired": "Geef toegang tot uw foto's.",
+      "savedTitle": "Profielfoto opgeslagen",
+      "saveFailed": "Kan profielfoto niet opslaan."
+    },
+    "delete": {
+      "noEmailOnAccount": "Er is geen e-mailadres gevonden voor dit account.",
+      "loginRequired": "Meld u eerst aan om uw account te verwijderen.",
+      "requestConfirmedTitle": "Verwijderingsverzoek bevestigd",
+      "requestConfirmedDescription": "We hebben een e-mail gestuurd naar {{email}}. Bevestig de accountverwijdering met de code uit die e-mail.",
+      "sendVerificationFailed": "Kan de verwijderingsverificatie-e-mail niet verzenden.",
+      "deletedTitle": "Account verwijderd",
+      "deletedDescription": "Uw account en gegevens zijn succesvol verwijderd.",
+      "deleteFailed": "Kan account niet verwijderen.",
+      "deletingLabel": "Verwijderen...",
+      "menuTitle": "Account verwijderen",
+      "menuSubtitle": "Verwijdert uw account en alle gegevens na bevestiging per e-mail",
+      "confirmTitle": "Account verwijderen?",
+      "confirmDescription": "Weet je het zeker? Alle gegevens worden verwijderd. Zorg ervoor dat uw afbeeldingen zijn opgeslagen.",
+      "keepAccessButton": "Nee, houd toegang",
+      "confirmDeleteButton": "Ja, verwijderen",
+      "emailVerificationTitle": "E-mailverificatie",
+      "emailVerificationDescription": "Voer de code uit uw e-mail in om het verwijderen van uw account te bevestigen.",
+      "codePlaceholder": "Voer code in",
+      "finalDeleteButton": "Permanent verwijderen"
+    }
+  },
+  "auth": {
+    "signIn": "Log in",
+    "signUp": "Account aanmaken",
+    "signInDescription": "Meld u aan om uw foto's te bekijken",
+    "signUpDescription": "Maak een account aan voor al je ritten",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "email": "E-mailadres",
+    "password": "Wachtwoord",
+    "signInButton": "Inloggen",
+    "signUpButton": "Account aanmaken",
+    "alreadyHaveAccount": "Heeft u al een account?",
+    "noAccount": "Heeft u nog geen account?",
+    "register": "Register",
+    "terms": "Gebruiksvoorwaarden",
+    "termsOfService": "Servicevoorwaarden",
+    "privacyPolicy": "Privacybeleid",
+    "fillAllFields": "Vul alle velden in.",
+    "authFailed": "Authenticatie mislukt",
+    "unexpectedError": "Er is een onverwachte fout opgetreden.",
+    "createAccount": "Account aanmaken",
+    "createAccountSubtitle": "Maak een account aan voor al je ritten",
+    "signInSubtitle": "Meld u aan om uw foto's te bekijken",
+    "emailAddress": "E-mailadres",
+    "haveAccountPrompt": "Heeft u al een account?",
+    "noAccountPrompt": "Nog geen account?",
+    "signupSuccess": "Registratie succesvol! Controleer uw e-mail om uw account te bevestigen.",
+    "termsPrefix": "Door u aan te melden, gaat u akkoord met onze",
+    "andThe": "en de",
+    "termsSuffix": ".",
+    "errors": {
+      "fillAllFields": "Vul alle velden in.",
+      "passwordTooShort": "Wachtwoord moet minimaal 6 tekens lang zijn.",
+      "authFailed": "Authenticatie mislukt",
+      "invalidCredentials": "Ongeldig e-mailadres of wachtwoord",
+      "emailNotConfirmed": "Bevestig eerst uw e-mailadres",
+      "emailAlreadyRegistered": "Dit e-mailadres is al geregistreerd",
+      "unexpected": "Er is een onverwachte fout opgetreden."
+    }
+  },
+  "tabs": {
+    "home": "Thuis",
+    "gallery": "Galerij",
+    "cart": "Winkelwagen",
+    "dashboard": "Dashboard",
+    "profile": "Profiel"
+  },
+  "info": {
+    "title": "Parkinformatie",
+    "welcomeTitle": "🎢 Avonturenland",
+    "welcomeSubtitle": "Uw familiepretpark in het hart van Duitsland",
+    "welcomeText": "Sinds 1987 zorgen wij voor onvergetelijke ervaringen voor het hele gezin. Met ruim 30 attracties, shows en eetgelegenheden is er voor ieder wat wils!",
+    "contact": {
+      "title": "📞 Contact & Adres",
+      "parkName": "Avonturenland-pretpark",
+      "address1": "Abenteuer Allee 15",
+      "address2": "12345 Funstadt",
+      "hotline": "Hotline: +49 (0)800 123 456 789",
+      "email": "E-mail: info@adventureland-park.de",
+      "website": "Website: www.adventureland-park.de",
+      "emergency": "Parkeernoodgeval: +49 (0)800 123 456 911"
+    },
+    "hours": {
+      "title": "🕒 Openingstijden",
+      "regular": "REGULIERE SEIZOEN (april - oktober):",
+      "weekdays": "Maandag - vrijdag: 10:00 - 18:00 uur",
+      "weekends": "Zaterdag - zondag: 09.00 - 20.00 uur",
+      "holidays": "Feestdagen: 9.00 - 20.00 uur",
+      "highSeason": "HOOGSEIZOEN (juli - augustus):",
+      "highSeasonHours": "Dagelijks: 09:00 - 21:00 uur",
+      "winter": "WINTERSEIZOEN (november - maart):",
+      "winterHours": "Alleen in het weekend: 11.00 - 17.00 uur",
+      "lastEntry": "Laatste toegang: 1 uur voor sluitingstijd"
+    },
+    "prices": {
+      "title": "💶 Toegangsprijzen",
+      "adults": "VOLWASSENEN (13 jaar en ouder): € 24,90",
+      "children": "KINDEREN (4-12 jaar): € 19,90",
+      "seniors": "SENIOREN (65+): € 22,90",
+      "toddlers": "PEUTERS (jonger dan 4 jaar): GRATIS",
+      "familyTickets": "FAMILIEKAARTJES:",
+      "familyStandard": "Standaard Familie (2+2): €79,90",
+      "familyLarge": "Groot gezin (2+3): € 94,90",
+      "familyXXL": "XXL Familie (2+4): € 109,90",
+      "seasonPasses": "SEIZOENPASSEN:",
+      "seasonAdult": "Volwassenen: € 89,90",
+      "seasonChild": "Kinderen: € 69,90"
+    },
+    "transport": {
+      "title": "🚗 Routebeschrijving en parkeren",
+      "car": "PER AUTO:",
+      "highway": "Snelweg A7, afrit \"Funstadt-Ost\"",
+      "directions": "Volg daarna de borden gedurende 5 km",
+      "gps": "GPS: Abenteuer Allee 15, 12345 Funstadt",
+      "parking": "PARKEREN:",
+      "parkingSpots": "500 gratis parkeerplaatsen",
+      "disabledParking": "50 invalidenparkeerplaatsen (direct bij ingang)",
+      "familyParking": "20 gezinsparkeerplaatsen (brede plekken)",
+      "publicTransport": "OPENBAAR VERVOER:",
+      "bus": "Buslijn 42: Halte \"Avonturenland\"",
+      "train": "S-Bahn S3: Station Funstadt + Bus 42",
+      "shuttle": "Shuttleservice vanaf station (€ 2 per persoon)"
+    },
+    "accessibility": {
+      "title": "♿ Toegankelijkheid",
+      "wheelchair": "ROLSTOEL TOEGANKELIJKE FACILITEITEN:",
+      "wheelchairPaths": "✅ Alle hoofdpaden rolstoeltoegankelijk",
+      "wheelchairAttractions": "✅ 15 rolstoeltoegankelijke attracties",
+      "wheelchairToilets": "✅ Invalidentoiletten in elke ruimte",
+      "wheelchairRental": "✅ Gratis rolstoelverhuur (afhankelijk van beschikbaarheid)",
+      "visuallyImpaired": "VOOR VISUEEL GEhandicapten:",
+      "guideDogs": "✅ Geleidehonden welkom",
+      "tactileSystems": "✅ Tactiele geleidingssystemen",
+      "audioGuides": "✅ Audiogidsen beschikbaar",
+      "hearingImpaired": "VOOR HOORHORGEN:",
+      "inductionLoops": "✅ Inductielussen bij servicepunten",
+      "signLanguage": "✅ Gebarentolken (op aanvraag)"
+    },
+    "rules": {
+      "title": "📋 Parkregels",
+      "notAllowed": "NIET TOEGESTAAN:",
+      "noFood": "• Buiten eten en drinken",
+      "noGlass": "• Glazen flessen en blikjes",
+      "noPets": "• Huisdieren (behalve hulpdieren)",
+      "noWeapons": "• Wapens en gevaarlijke voorwerpen",
+      "noAlcohol": "• Buitenalcohol",
+      "noDrones": "• Drones en modelvliegtuigen",
+      "photography": "FOTOGRAFIE:",
+      "privateAllowed": "✅ Privéfoto's en video's toegestaan",
+      "commercialNo": "❌ Commercieel gebruik vereist toestemming",
+      "noFlash": "❌ Flitsfotografie tijdens ritten",
+      "health": "GEZONDHEID:",
+      "pacemaker": "• Pacemakers: vermijd bepaalde attracties",
+      "pregnancy": "• Zwangerschap: Wees voorzichtig tijdens ritten",
+      "heightRequirement": "• Let op de hoogtevereisten (90 cm - 140 cm afhankelijk van de attractie)"
+    },
+    "emergency": {
+      "title": "🚨 Parkeernoodgeval",
+      "description": "In geval van medische noodgevallen of andere problemen kunt u onmiddellijk contact opnemen met:",
+      "number": "📞 +49 (0)800 123 456 911",
+      "location": "EHBO-posten bevinden zich in Family Area (centraal station), Thrill Zone en Adventure Land."
+    },
+    "footer": "Avonturenland - Waar dromen uitkomen! 🎢✨"
+  },
+  "news": {
+    "title": "Nieuws",
+    "categories": {
+      "attraction": "Attracties",
+      "event": "Evenementen",
+      "food": "Eten en dineren",
+      "general": "Algemeen"
+    },
+    "badges": {
+      "new": "NIEUW"
+    },
+    "items": {
+      "thunderMountain": {
+        "title": "NIEUWE ROLLERCOASTER \"Thunder Mountain\" gaat open!",
+        "date": "1 augustus 2024",
+        "content": "De spectaculaire nieuwe achtbaan \"Thunder Mountain\" is nu geopend! Op een hoogte van 65 meter en snelheden tot 85 km/u biedt hij pure sensatie. De eerste testrijders zijn enthousiast over de 7 lussen en de 360 ​​graden kurkentrekker."
+      },
+      "summerFest": {
+        "title": "Zomerfestival 15-17 juli",
+        "date": "10 juli 2024",
+        "content": "Ons grote zomerfestival komt eraan! Drie dagen vol livemuziek, straatartiesten en elke avond om 22.00 uur een spectaculair vuurwerk. Speciale foodtrucks bieden internationale gerechten."
+      },
+      "pizzaStation": {
+        "title": "Pizzastation \"Mama Mia\" onlangs geopend",
+        "date": "25 juni 2024",
+        "content": "In het hart van Thrill Zone is ons nieuwe pizzastation geopend! Authentieke Italiaanse pizza's uit de steenoven, bereid door echte Italiaanse koks. Probeer de specialiteit \"Thunder Mountain\" met pittige salami!"
+      },
+      "familyDiscount": {
+        "title": "Gezinskorting verlengd",
+        "date": "20 juni 2024",
+        "content": "Vanwege de grote vraag verlengen wij onze gezinskorting! Gezinnen met 2 volwassenen en 2 kinderen betalen slechts €80 in plaats van €96. Geldig tot eind augustus 2024."
+      },
+      "circus": {
+        "title": "Circus \"Fantasia\" bezoekt het park",
+        "date": "15 juni 2024",
+        "content": "Het beroemde Circus \"Fantasia\" zal de hele zomer bij ons zijn! Voorstellingen dagelijks om 14.00 en 16.30 uur in het grote amfitheater. Acrobatiek, clowns en wilde dieren zorgen voor vermaak voor het hele gezin."
+      },
+      "newParking": {
+        "title": "Nieuwe parkeerplaats in Sector C",
+        "date": "5 juni 2024",
+        "content": "We hebben 200 extra parkeerplaatsen geopend in de nieuwe Sector C. Gratis parkeren voor alle bezoekers, op slechts 3 minuten lopen van de hoofdingang. Gehandicaptenparkeerplaatsen direct bij de ingang beschikbaar."
+      }
+    },
+    "footer": "Volg ons voor meer updates!"
+  },
+  "menu": {
+    "title": "Menu",
+    "intro": {
+      "title": "Welkom bij ons dineren!",
+      "text": "Van authentieke Italiaanse pizza tot Duitse klassiekers - we hebben voor elk wat wils!"
+    },
+    "badges": {
+      "new": "NIEUW",
+      "popular": "POPULAIR"
+    },
+    "categories": {
+      "pizza": "Pizzastation \"Mama Mia\"",
+      "burgers": "Burgergrill \"Big Bite\"",
+      "german": "Braadworst stand",
+      "healthy": "Gezonde hoek",
+      "sweets": "Snoepjes en drankjes"
+    },
+    "items": {
+      "pizzaMargherita": {
+        "name": "Pizza Margherita",
+        "description": "Tomatensaus, mozzarella, basilicum"
+      },
+      "pizzaSalami": {
+        "name": "Pizzasalami",
+        "description": "Met Italiaanse salami"
+      },
+      "pizzaQuattro": {
+        "name": "Pizza Quattro Stagioni",
+        "description": "Vier seizoenen met champignons, ham, artisjokken"
+      },
+      "pizzaThunder": {
+        "name": "Pizza Donderberg",
+        "description": "Pittige salami, jalapeños, hete saus"
+      },
+      "pizzaVeggie": {
+        "name": "Pizza Vegetarisch",
+        "description": "Paprika, courgette, aubergine, feta"
+      },
+      "classicBurger": {
+        "name": "Klassieke hamburger",
+        "description": "Met friet en koolsalade"
+      },
+      "cheeseburger": {
+        "name": "Cheeseburger Deluxe",
+        "description": "Dubbele kaas, spek, uien"
+      },
+      "bbqBurger": {
+        "name": "BBQ-baconburger",
+        "description": "BBQ-saus, geroosterde uien, krokant spek"
+      },
+      "veggieBurger": {
+        "name": "Vegetarische Burger",
+        "description": "Huisgemaakte groentepasteitjes"
+      },
+      "chickenBurger": {
+        "name": "Kipburger",
+        "description": "Gegrilde kipfilet, avocado"
+      },
+      "bratwurst": {
+        "name": "Braadworst met Rol",
+        "description": "Met mosterd of ketchup"
+      },
+      "currywurst": {
+        "name": "Curryworst met frietjes",
+        "description": "Met huisgemaakte currysaus"
+      },
+      "thuringer": {
+        "name": "Thüringer-selectie",
+        "description": "Originele Thüringer braadworst"
+      },
+      "weisswurst": {
+        "name": "Witte worst",
+        "description": "Met zoete mosterd en pretzel"
+      },
+      "caesarSalad": {
+        "name": "Caesarsalade",
+        "description": "Romaine sla, parmezaanse kaas, croutons, Caesardressing"
+      },
+      "chickenWrap": {
+        "name": "Kip wrap",
+        "description": "Gegrilde kip, groenten, yoghurtdressing"
+      },
+      "quinoaBowl": {
+        "name": "Quinoa-kom",
+        "description": "Quinoa, avocado, geroosterde groenten"
+      },
+      "fruitSalad": {
+        "name": "Fruitsalade",
+        "description": "Seizoensfruit"
+      },
+      "smoothieBowl": {
+        "name": "Smoothiebowl",
+        "description": "Acai, bessen, muesli"
+      },
+      "softIceCream": {
+        "name": "Zacht ijs",
+        "description": "Vanille, chocolade of aardbei"
+      },
+      "churros": {
+        "name": "Churros",
+        "description": "Met kaneel en suiker"
+      },
+      "almonds": {
+        "name": "Geroosterde Amandelen",
+        "description": "Vers geroosterd"
+      },
+      "soda": {
+        "name": "Cola/Fanta 0,5L",
+        "description": ""
+      },
+      "water": {
+        "name": "Water 0,5L",
+        "description": ""
+      },
+      "beer": {
+        "name": "Bier 0,4L",
+        "description": "Pilsener van koude trek"
+      },
+      "coffee": {
+        "name": "Koffie",
+        "description": "Espresso, cappuccino, latte"
+      },
+      "hotChocolate": {
+        "name": "Warme chocolademelk",
+        "description": "Met slagroom en marshmallows"
+      }
+    },
+    "footer": {
+      "title": "Eettijden",
+      "weekdays": "Ma-Vr: 10:00 - 17:30 uur",
+      "weekends": "Za-zo: 9.00 - 19.30 uur",
+      "summer": "Juli/augustus: dagelijks tot 20.30 uur",
+      "note": "Alle prijzen zijn inclusief BTW"
+    }
+  },
+  "map": {
+    "title": "Parkkaart",
+    "overview": {
+      "title": "🗺️ Overzicht avonturenland",
+      "text": "Ons park van 85 hectare is verdeeld in drie themagebieden. Gebruik de gratis parkapp voor GPS-navigatie of volg de gekleurde borden ter plaatse.",
+      "attractions": "Attracties",
+      "restaurants": "Restaurants",
+      "hectares": "Hectaren"
+    },
+    "sections": {
+      "parkAreas": "🏰 Parkgebieden",
+      "gastronomy": "🍽️ Dineren",
+      "services": "🛠️ Diensten & Faciliteiten",
+      "shows": "🎭 Shows en optredens"
+    },
+    "areas": {
+      "thrill": {
+        "title": "Thrill Zone (Noord)",
+        "description": "Voor adrenalinejunkies en sensatiezoekers",
+        "attractions": {
+          "thunderMountain": "🎢 Thunder Mountain (achtbaan) - NIEUW! 65m hoog, 85 km/u",
+          "wildEagle": "🗼 Wild Eagle (Drop Tower) - vrije val van 45 meter",
+          "speedRacer": "🏁 Speed ​​Racer (kartbaan) - circuit van 800 meter",
+          "tornado": "🌪️ Tornado Twister (draaiende achtbaan) - 7 lussen",
+          "skyShot": "🎯 Sky Shot (katapult) - 60 meter in 2 seconden",
+          "ghost": "🎭 Ghost Manor (spookhuis) - Alleen voor dapperen!"
+        }
+      },
+      "family": {
+        "title": "Familiegedeelte (midden)",
+        "description": "Plezier voor het hele gezin",
+        "attractions": {
+          "carousel": "🎠 Sprookjescarrousel - Nostalgische kettingcarrousel",
+          "bumperCars": "🚗 Botsauto's Deluxe - Botsauto's met LED-verlichting",
+          "miniCoaster": "🐉 Mini-achtbaan \"Dragon Ride\" - Perfect voor kinderen",
+          "ferrisWheel": "🎡 Reuzenrad \"Sky View\" - 45m hoog met panoramisch uitzicht",
+          "waterBattle": "💦 Watergevecht \"Splash Zone\" - Verfrissing gegarandeerd!",
+          "train": "🚂 Parkspoorweg \"Adventure Express\" - retour van 15 minuten",
+          "amphitheater": "🎪 Amfitheater - Shows dagelijks om 14:00 en 16:30 uur"
+        }
+      },
+      "adventure": {
+        "title": "Avonturenland (Zuid)",
+        "description": "Beleef de natuur en avontuur",
+        "attractions": {
+          "climbingPark": "🧗 Klimpark \"Tree Top\" - 15 verschillende parcoursen",
+          "summerToboggan": "🛷 Zomerrodelbaan \"Alpine Rush\" - 1,2 km bergafwaarts",
+          "playground": "🏰 Avonturenspeeltuin - 2000 m² klimplezier",
+          "pettingZoo": "🐄 Kinderboerderij \"Happy Farm\" - Geiten, pony's, konijnen",
+          "naturePath": "🌿 Natuurpad - Ontdek flora en fauna",
+          "archery": "🏹 Boogschieten - Onder begeleiding (vanaf 8 jaar)",
+          "fishing": "🎣 Visvijver - Rustig en ontspannend"
+        }
+      }
+    },
+    "restaurants": {
+      "mamaMia": "Pizza \"Mama Mia\"",
+      "bigBite": "Burgergrill \"Big Bite\"",
+      "bratwurst": "Braadworst stand",
+      "healthy": "Gezonde hoek",
+      "cafe": "Café \"Zoete Dromen\"",
+      "biergarten": "Biertuin \"Gemütlich\""
+    },
+    "services": {
+      "firstAidMain": "EHBO (centraal station)",
+      "firstAidThrill": "EHBO (filiaal)",
+      "babyChanging": "Babykleedkamers",
+      "souvenirShop": "Souvenirwinkel \"Herinneringen\"",
+      "photoShop": "Fotowinkel \"Glimlach\"",
+      "wheelchairRental": "Rolstoelverhuur",
+      "strollerRental": "Kinderwagen verhuur",
+      "lostAndFound": "Gevonden voorwerpen"
+    },
+    "locations": {
+      "thrillZone": "Sensatiezone",
+      "familyArea": "Familiegedeelte",
+      "adventureLand": "Avonturenland",
+      "mainEntrance": "Hoofdingang",
+      "allAreas": "Alle gebieden"
+    },
+    "shows": {
+      "circus": {
+        "name": "Circus \"Fantasia\"",
+        "location": "Amfitheater"
+      },
+      "fairytale": {
+        "name": "Sprookjestheater",
+        "location": "Familiegedeelte"
+      },
+      "magic": {
+        "name": "Magische show \"Magic Mike\"",
+        "location": "Sensatiezone"
+      },
+      "safari": {
+        "name": "Dierenshow \"Safari\"",
+        "location": "Avonturenland"
+      }
+    },
+    "tips": {
+      "title": "💡 Insidertips",
+      "tip1": "• Bezoek Thunder Mountain vroeg in de ochtend - kortere wachttijden!",
+      "tip2": "• Het reuzenrad biedt het beste panoramische uitzicht bij zonsondergang",
+      "tip3": "• Gratis park-app met live wachttijden beschikbaar",
+      "tip4": "• Family Fast Pass voor € 15 - sla de wachtrijen over",
+      "tip5": "• Picknicken toegestaan ​​in Adventure Land-gebied",
+      "tip6": "• Gratis WiFi beschikbaar in het hele park"
+    },
+    "footer": "Heeft u vragen over een routebeschrijving?\nOnze medewerkers helpen u graag! 🗺️"
+  },
+  "editProfile": {
+    "title": "Profiel bewerken",
+    "accountSection": "Rekening",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "dashboardUsername": "Dashboard-gebruikersnaam",
+    "dashboardUsernamePlaceholder": "bijv. RacerMax",
+    "saving": "Besparing...",
+    "saveProfile": "Profiel opslaan",
+    "securitySection": "Beveiliging",
+    "email": "E-mail",
+    "currentPasswordRequired": "Huidig ​​wachtwoord (vereist voor wijzigingen)",
+    "currentPassword": "Huidig ​​wachtwoord",
+    "newPasswordOptional": "Nieuw wachtwoord (optioneel)",
+    "newPassword": "Nieuw wachtwoord",
+    "repeatNewPassword": "Herhaal nieuw wachtwoord",
+    "repeatPassword": "Herhaal wachtwoord",
+    "updateEmailPassword": "E-mailadres/wachtwoord bijwerken",
+    "messages": {
+      "profileUpdated": "Profiel is succesvol bijgewerkt.",
+      "savedTitle": "Opgeslagen",
+      "emailAndPasswordUpdated": "E-mailadres en wachtwoord zijn succesvol bijgewerkt.",
+      "emailUpdatedConfirm": "E-mail succesvol bijgewerkt. Bevestig uw e-mailadres.",
+      "passwordUpdated": "Wachtwoord succesvol bijgewerkt.",
+      "securityUpdatedTitle": "Beveiliging bijgewerkt",
+      "confirmEmailInbox": "Bevestig de nieuwe e-mail in uw inbox.",
+      "passwordChanged": "Wachtwoord succesvol gewijzigd."
+    },
+    "errors": {
+      "noUserFound": "Geen gebruiker gevonden. Meld u opnieuw aan.",
+      "enterCurrentPassword": "Voer het huidige wachtwoord in.",
+      "currentPasswordWrong": "Het huidige wachtwoord is onjuist.",
+      "notLoggedIn": "Niet aangemeld.",
+      "profileSaveFailed": "Kan profiel niet opslaan.",
+      "newPasswordTooShort": "Nieuw wachtwoord moet minimaal 6 tekens lang zijn.",
+      "passwordsDontMatch": "Nieuwe wachtwoorden komen niet overeen.",
+      "noSecurityChanges": "Geen e-mail-/wachtwoordwijzigingen gedetecteerd.",
+      "securitySaveFailed": "Kan beveiligingsinstellingen niet opslaan."
+    }
+  },
+  "notificationsPage": {
+    "title": "Meldingen",
+    "newsletterTitle": "Nieuwsbrief",
+    "newsletterSubtitle": "Ontvang aanbiedingen, nieuws en promoties per e-mail.",
+    "newsletterSubscribed": "Nieuwsbrief succesvol aangemeld.",
+    "newsletterUnsubscribed": "Nieuwsbrief succesvol afgemeld.",
+    "popupTitle": "Pop-up weergeven",
+    "popupSubtitle": "Bepaalt of pop-upmeldingen worden weergegeven in de app.",
+    "popupEnabled": "Pop-up ingeschakeld.",
+    "popupDisabled": "Pop-up uitgeschakeld.",
+    "loading": "Instellingen laden...",
+    "saving": "Besparing...",
+    "persistedHint": "Instellingen blijven opgeslagen na in- en uitloggen.",
+    "settingsSaveFailed": "Kan instelling niet opslaan."
+  },
+  "downloadAll": {
+    "title": "Alle foto's downloaden",
+    "downloadAllButton": "Download alle gekochte foto's ({{count}})",
+    "downloadingProgress": "Bezig met downloaden... {{downloaded}}/{{total}}",
+    "loadingPhotos": "Foto's laden...",
+    "noPurchasedPhotos": "Geen gekochte foto's beschikbaar.",
+    "noPurchasedPhotosYet": "Nog geen gekochte foto's.",
+    "imageNumber": "Afbeelding #{{number}}",
+    "permissionRequiredTitle": "Toestemming vereist",
+    "permissionRequiredDescription": "Geef toegang tot foto's/galerij.",
+    "downloadedCount": "{{count}} foto's zijn gedownload.",
+    "errors": {
+      "loadFailed": "Kan foto's niet laden.",
+      "downloadFailedStatus": "Downloaden mislukt ({{status}})",
+      "noStorageDirectory": "Geen opslagdirectory gevonden",
+      "downloadAllFailed": "Kon niet alle foto's volledig downloaden."
+    }
+  },
+  "qr": {
+    "noCodeDetectedTitle": "Geen QR-code gedetecteerd",
+    "noCodeDetectedDescription": "Er is geen QR-code gevonden. Zorg ervoor dat de code duidelijk zichtbaar is en probeer het opnieuw.",
+    "checkingCameraPermission": "Cameratoestemming controleren...",
+    "cameraAccessShort": "Om QR-codes te kunnen scannen, hebben wij toegang tot uw camera nodig.",
+    "pointCameraToCode": "Richt de camera op de QR-code",
+    "flashOn": "Flitser aan",
+    "flashOff": "Flits uit",
+    "privacyNotice": "🔒 De camera wordt alleen gebruikt voor scannen en slaat geen afbeeldingen op"
+  },
+  "support": {
+    "title": "Hulp en ondersteuning",
+    "heroTitle": "Wij zijn hier om snel te helpen",
+    "heroText": "Hier vind je antwoorden op de meest gestelde vragen over ritten, foto's, betalingen en je account.",
+    "faqTitle": "Veelgestelde vragen",
+    "faq1Question": "Hoe kan ik mijn gekochte foto's vinden?",
+    "faq1Answer": "Open de galerij en ga naar Mijn gekochte foto's. Daar kun je alle ontgrendelde foto's zien.",
+    "faq2Question": "Waarom wordt een afbeelding niet gedownload?",
+    "faq2Answer": "Zorg ervoor dat de afbeelding al is gekocht en dat uw internetverbinding stabiel is. Op mobiele apparaten kan ook toestemming van de media vereist zijn.",
+    "faq3Question": "Hoe kan ik mijn e-mailadres of wachtwoord wijzigen?",
+    "faq3Answer": "Ga naar Profiel en vervolgens Profiel bewerken. Daar kunt u de accountgegevens bijwerken. Afhankelijk van de actie kan herauthenticatie vereist zijn.",
+    "faq4Question": "Waarom wordt mijn naam niet weergegeven in de dagelijkse ranglijst?",
+    "faq4Answer": "De ranglijst gebruikt je hoogste ontgrendelde snelheid. Controleer of uw profielgegevens zijn opgeslagen en of er ten minste één afbeelding is gekocht.",
+    "faq5Question": "Hoe kan ik mij afmelden voor de nieuwsbrief?",
+    "faq5Answer": "Onder Profiel > Meldingen kunt u op elk gewenst moment nieuwsbrief- en pop-upmeldingen in- of uitschakelen.",
+    "contactTitle": "Contact",
+    "responseTime": "Reactietijd: doorgaans binnen 24 uur",
+    "reportProblemTitle": "Meld een probleem",
+    "reportProblemText": "Beschrijf uw probleem zo nauwkeurig mogelijk: getroffen rit, tijd, screenshot en gebruikt apparaat. Hierdoor kunnen wij u sneller ondersteunen."
+  },
+  "privacy": {
+    "title": "Privacy",
+    "heroTitle": "Privacyverklaring van Liftpictures",
+    "heroDate": "Versie: februari 2026",
+    "section1Title": "1. Gegevensbeheerder",
+    "section1Text": "De exploitant van Liftpictures is verantwoordelijk voor de gegevensverwerking in deze app. Als u privacyvragen heeft, kunt u contact met ons opnemen via support@liftpictures.app.",
+    "section2Title": "2. Welke gegevens verwerken wij?",
+    "section2Intro": "In het bijzonder verwerken wij de volgende gegevens:",
+    "section2Bullet1": "• Accountgegevens (e-mail, voornaam, achternaam, optionele weergavenaam)",
+    "section2Bullet2": "• Gebruiksgegevens (ritten, gekochte afbeeldingen, favorieten, winkelwagen)",
+    "section2Bullet3": "• Betalingsgerelateerde metadata (bijv. Stripe-transactiereferenties)",
+    "section2Bullet4": "• Vrijwillige gegevens (bijvoorbeeld abonnement op nieuwsbrief, profielfoto)",
+    "section3Title": "3. Doel van de verwerking",
+    "section3Bullet1": "• Verzorging van de app en gebruikersbeheer",
+    "section3Bullet2": "• Weergave en ontgrendeling van gekochte foto's",
+    "section3Bullet3": "• Betalingsverwerking en fraudepreventie",
+    "section3Bullet4": "• Optionele nieuwsbriefcommunicatie",
+    "section3Bullet5": "• Verbetering van de stabiliteit en veiligheid",
+    "section4Title": "4. Rechtsgrondslag",
+    "section4Text": "Afhankelijk van de context is de verwerking gebaseerd op contractuitvoering (Art. 6(1)(b) AVG), legitieme belangen (Art. 6(1)(f) AVG) of uw toestemming (Art. 6(1)(a) AVG), b.v. voor nieuwsbrieven.",
+    "section5Title": "5. Bewaartermijn",
+    "section5Text": "Wij bewaren persoonsgegevens slechts zo lang als nodig is voor de genoemde doeleinden of zoals vereist door de wet. U kunt de nieuwsbriefinstellingen op elk moment in de app wijzigen.",
+    "section6Title": "6. Delen met derden",
+    "section6Text": "Wij maken gebruik van technische dienstverleners (bijvoorbeeld hosting, database, betalingsverwerking). Gegevens worden alleen gedeeld als dat nodig is en op basis van verwerkersovereenkomsten.",
+    "section7Title": "7. Uw rechten",
+    "section7Bullet1": "• Toegang tot opgeslagen gegevens",
+    "section7Bullet2": "• Correctie van onjuiste gegevens",
+    "section7Bullet3": "• Verwijdering of beperking van de verwerking",
+    "section7Bullet4": "• Bezwaar tegen bepaalde verwerkingen",
+    "section7Bullet5": "• Gegevensportabiliteit",
+    "section7Text": "Om uw rechten uit te oefenen, kunt u contact met ons opnemen via de ondersteuningssectie.",
+    "section8Title": "8. Beveiliging",
+    "section8Text": "Wij passen passende technische en organisatorische maatregelen toe om uw gegevens te beschermen tegen verlies, misbruik en ongeautoriseerde toegang.",
+    "section9Title": "9. Wijzigingen in deze verklaring",
+    "section9Text": "We kunnen deze privacyverklaring indien nodig bijwerken. Op deze pagina vindt u altijd de actuele versie."
+  }
+}

@@ -14,7 +14,25 @@
       "bundler": "metro",
       "output": "single"
     },
-    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Liftpictures to access your photos so you can set a profile image."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Liftpictures to access your photos.",
+          "savePhotosPermission": "Allow Liftpictures to save photos to your gallery.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }

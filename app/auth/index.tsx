@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, User, ArrowLeft, AlertCircle } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -16,6 +17,7 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const { t } = useTranslation();
 
   const { signIn, signUp } = useAuthContext();
 
@@ -24,12 +26,12 @@ export default function AuthScreen() {
     setSuccessMessage('');
 
     if (!email || !password || (isSignUp && (!firstName || !lastName))) {
-      setError('Bitte fülle alle Felder aus.');
+      setError(t('auth.errors.fillAllFields'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Das Passwort muss mindestens 6 Zeichen lang sein.');
+      setError(t('auth.errors.passwordTooShort'));
       return;
     }
 
@@ -43,7 +45,7 @@ export default function AuthScreen() {
         result = await signUp(email, password, firstName, lastName);
 
         if (!result.error) {
-          setSuccessMessage('Registrierung erfolgreich! Bitte überprüfe deine E-Mail, um dein Konto zu bestätigen.');
+          setSuccessMessage(t('auth.signupSuccess'));
           setEmail('');
           setPassword('');
           setFirstName('');
@@ -66,14 +68,14 @@ export default function AuthScreen() {
 
       if (result.error) {
         console.error('Auth error:', result.error);
-        let errorMessage = 'Authentifizierung fehlgeschlagen';
+        let errorMessage = t('auth.errors.authFailed');
 
         if (result.error.message?.includes('Invalid login credentials')) {
-          errorMessage = 'Ungültige E-Mail oder Passwort';
+          errorMessage = t('auth.errors.invalidCredentials');
         } else if (result.error.message?.includes('Email not confirmed')) {
-          errorMessage = 'Bitte bestätige zuerst deine E-Mail-Adresse';
+          errorMessage = t('auth.errors.emailNotConfirmed');
         } else if (result.error.message?.includes('User already registered')) {
-          errorMessage = 'Diese E-Mail-Adresse ist bereits registriert';
+          errorMessage = t('auth.errors.emailAlreadyRegistered');
         } else {
           errorMessage = result.error.message || errorMessage;
         }
@@ -82,7 +84,7 @@ export default function AuthScreen() {
       }
     } catch (error) {
       console.error('Unexpected auth error:', error);
-      setError('Ein unerwarteter Fehler ist aufgetreten.');
+      setError(t('auth.errors.unexpected'));
     } finally {
       setIsLoading(false);
     }
@@ -111,12 +113,12 @@ export default function AuthScreen() {
         <View style={styles.content}>
           <View style={styles.authCard}>
             <Text style={styles.authTitle}>
-              {isSignUp ? 'Konto erstellen' : 'Anmelden'}
+              {isSignUp ? t('auth.createAccount') : t('auth.signIn')}
             </Text>
             <Text style={styles.authSubtitle}>
               {isSignUp 
-                ? 'Erstelle ein Konto für alle deine Fahrten' 
-                : 'Melde dich an, um deine Bilder zu sehen'
+                ? t('auth.createAccountSubtitle')
+                : t('auth.signInSubtitle')
               }
             </Text>
 
@@ -142,7 +144,7 @@ export default function AuthScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="Vorname"
+                      placeholder={t('auth.firstName')}
                       placeholderTextColor="#666"
                       value={firstName}
                       onChangeText={setFirstName}
@@ -156,7 +158,7 @@ export default function AuthScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="Nachname"
+                      placeholder={t('auth.lastName')}
                       placeholderTextColor="#666"
                       value={lastName}
                       onChangeText={setLastName}
@@ -172,7 +174,7 @@ export default function AuthScreen() {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="E-Mail-Adresse"
+                  placeholder={t('auth.emailAddress')}
                   placeholderTextColor="#666"
                   value={email}
                   onChangeText={setEmail}
@@ -187,7 +189,7 @@ export default function AuthScreen() {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Passwort"
+                  placeholder={t('auth.password')}
                   placeholderTextColor="#666"
                   value={password}
                   onChangeText={setPassword}
@@ -202,10 +204,10 @@ export default function AuthScreen() {
               >
                 <Text style={styles.authButtonText}>
                   {isLoading 
-                    ? 'Lädt...' 
+                    ? t('common.loading')
                     : isSignUp 
-                      ? 'Konto erstellen' 
-                      : 'Anmelden'
+                      ? t('auth.createAccount')
+                      : t('auth.signIn')
                   }
                 </Text>
               </TouchableOpacity>
@@ -213,7 +215,7 @@ export default function AuthScreen() {
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>oder</Text>
+              <Text style={styles.dividerText}>{t('common.or')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -223,11 +225,11 @@ export default function AuthScreen() {
             >
               <Text style={styles.switchText}>
                 {isSignUp 
-                  ? 'Hast du bereits ein Konto? ' 
-                  : 'Noch kein Konto? '
+                  ? t('auth.haveAccountPrompt')
+                  : t('auth.noAccountPrompt')
                 }
                 <Text style={styles.switchLink}>
-                  {isSignUp ? 'Anmelden' : 'Registrieren'}
+                  {isSignUp ? t('auth.signIn') : t('auth.register')}
                 </Text>
               </Text>
             </TouchableOpacity>
@@ -236,9 +238,9 @@ export default function AuthScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Mit der Anmeldung stimmst du unseren{'\n'}
-            <Text style={styles.footerLink}>Nutzungsbedingungen</Text> und der{' '}
-            <Text style={styles.footerLink}>Datenschutzerklärung</Text> zu.
+            {t('auth.termsPrefix')}{'\n'}
+            <Text style={styles.footerLink}>{t('auth.terms')}</Text> {t('auth.andThe')}{' '}
+            <Text style={styles.footerLink}>{t('auth.privacyPolicy')}</Text> {t('auth.termsSuffix')}
           </Text>
         </View>
       </LinearGradient>

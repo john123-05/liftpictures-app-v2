@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ShoppingCart, Minus, Plus, Trash2, CreditCard, Lock, ArrowRight } from 'lucide-react-native';
+import { ShoppingCart, Minus, Plus, Trash2, CreditCard, Lock } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCart } from '@/contexts/CartContext';
@@ -28,7 +28,7 @@ export default function CartScreen() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        Alert.alert('Fehler', 'Sie müssen angemeldet sein, um fortzufahren.');
+        Alert.alert(t('common.error'), t('cart.loginRequired'));
         setIsProcessing(false);
         return;
       }
@@ -59,7 +59,7 @@ export default function CartScreen() {
 
       if (!response.ok || data.error) {
         console.error('Checkout error:', data.error);
-        Alert.alert('Fehler', data.error || 'Zahlung konnte nicht gestartet werden.');
+        Alert.alert(t('common.error'), data.error || t('cart.checkoutStartFailed'));
         setIsProcessing(false);
         return;
       }
@@ -78,16 +78,16 @@ export default function CartScreen() {
           // When user returns from browser
           if (result.type === 'cancel' || result.type === 'dismiss') {
             Alert.alert(
-              'Zahlung abgebrochen',
-              'Ihre Artikel bleiben im Warenkorb.',
-              [{ text: 'OK' }]
+              t('cart.paymentCancelledTitle'),
+              t('cart.paymentCancelledDescription'),
+              [{ text: t('common.ok') }]
             );
           } else {
             // Payment successful - clear cart and show success
             clearCart();
             Alert.alert(
               t('cart.paymentSuccessful'),
-              'Ihre Fotos wurden freigeschaltet!',
+              t('cart.photosUnlocked'),
               [
                 {
                   text: t('common.ok'),
@@ -101,7 +101,7 @@ export default function CartScreen() {
     } catch (error: any) {
       console.error('Checkout error:', error);
       console.error('Error details:', error.message, error.stack);
-      Alert.alert('Fehler', `Ein Fehler ist aufgetreten: ${error.message || 'Unbekannter Fehler'}`);
+      Alert.alert(t('common.error'), t('cart.checkoutErrorWithMessage', { message: error.message || t('cart.unknownError') }));
     } finally {
       setIsProcessing(false);
     }
@@ -209,23 +209,29 @@ export default function CartScreen() {
               </View>
 
               <View style={styles.itemControls}>
-                <View style={styles.quantityControls}>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => handleQuantityChange(item.photoId, item.quantity - 1)}
-                  >
-                    <Minus size={16} color="#fff" />
-                  </TouchableOpacity>
-                  
-                  <Text style={styles.quantityText}>{item.quantity}</Text>
-                  
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => handleQuantityChange(item.photoId, item.quantity + 1)}
-                  >
-                    <Plus size={16} color="#fff" />
-                  </TouchableOpacity>
-                </View>
+                {item.type === 'photo' ? (
+                  <View style={styles.quantitySingleContainer}>
+                    <Text style={styles.quantitySingleText}>1</Text>
+                  </View>
+                ) : (
+                  <View style={styles.quantityControls}>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(item.photoId, item.quantity - 1)}
+                    >
+                      <Minus size={16} color="#fff" />
+                    </TouchableOpacity>
+                    
+                    <Text style={styles.quantityText}>{item.quantity}</Text>
+                    
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(item.photoId, item.quantity + 1)}
+                    >
+                      <Plus size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                )}
 
                 <TouchableOpacity
                   style={styles.removeButton}
@@ -458,6 +464,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     paddingHorizontal: 12,
+  },
+  quantitySingleContainer: {
+    minHeight: 32,
+    minWidth: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quantitySingleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
   removeButton: {
     padding: 8,

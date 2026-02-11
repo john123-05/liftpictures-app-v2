@@ -13,6 +13,22 @@ const stripe = new Stripe(stripeSecret, {
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+type CheckoutCartItem = {
+  photoId?: string | null;
+  quantity?: number;
+  price?: number;
+  type?: 'photo' | 'pass' | 'ticket' | string;
+  selectedDate?: string | null;
+  title?: string | null;
+};
+
+type PhotoForLeaderboard = {
+  id: string;
+  speed_kmh: number | null;
+  captured_at: string;
+  storage_path: string;
+};
+
 Deno.serve(async (req) => {
   try {
     // Handle OPTIONS request for CORS preflight
@@ -144,7 +160,7 @@ async function handleEvent(event: Stripe.Event) {
         console.info(`[${event.id}] Found user: ${userId}`);
 
         // Parse cart items from metadata
-        const cartItems = metadata?.cart_items ? JSON.parse(metadata.cart_items) : [];
+        const cartItems: CheckoutCartItem[] = metadata?.cart_items ? JSON.parse(metadata.cart_items) : [];
         console.info(`[${event.id}] Cart items: ${cartItems.length}`);
 
         if (cartItems.length === 0) {
@@ -152,18 +168,20 @@ async function handleEvent(event: Stripe.Event) {
           return;
         }
 
-        // Create purchase record with first photo (schema requires photo_id NOT NULL)
-        const firstPhotoId = cartItems[0].photoId;
+        const purchasedAtIso = new Date().toISOString();
+        const representativePhotoId = await findRepresentativePhotoIdForPurchase(cartItems, purchasedAtIso);
+
+        // Create purchase record (photo_id may be null for pass-only orders)
         const { data: purchase, error: purchaseError } = await supabase
           .from('purchases')
           .insert({
             user_id: userId,
-            photo_id: firstPhotoId,
+            photo_id: representativePhotoId,
             stripe_checkout_session_id: checkout_session_id,
             stripe_payment_intent_id: payment_intent as string,
             amount_cents: amount_total,
             currency,
-            paid_at: new Date().toISOString(),
+            paid_at: purchasedAtIso,
             status: 'paid',
             total_amount_cents: amount_total,
           })
@@ -223,6 +241,86 @@ async function handleEvent(event: Stripe.Event) {
             } else {
               unlockedCount++;
               console.info(`[${event.id}] Unlocked photo: ${item.photoId}`);
+              await upsertLeaderboardEntryForPhoto(userId, item.photoId, event.id);
+            }
+            continue;
+          }
+
+          if (item.type === 'pass') {
+            const dayRange = getDayRangeInUtc(item.selectedDate ?? null, purchasedAtIso);
+            console.info(`[${event.id}] Processing pass for day: ${dayRange.selectedDate}`);
+
+            // Record the pass purchase item
+            const { error: passItemError } = await supabase
+              .from('purchase_items')
+              .insert({
+                purchase_id: purchase.id,
+                item_type: 'photopass',
+                product_code: `tagesfotopass:${dayRange.selectedDate}`,
+                unit_amount_cents: Math.round((item.price ?? 0) * 100),
+                quantity: 1,
+              });
+
+            if (passItemError) {
+              console.error(`[${event.id}] Error creating photopass purchase_item:`, passItemError);
+            }
+
+            // Unlock all photos captured on the pass day
+            const { data: dayPhotos, error: dayPhotosError } = await supabase
+              .from('photos')
+              .select('id, speed_kmh, captured_at, storage_path')
+              .gte('captured_at', dayRange.startIso)
+              .lt('captured_at', dayRange.endIso);
+
+            if (dayPhotosError) {
+              console.error(`[${event.id}] Error loading photos for pass day:`, dayPhotosError);
+              continue;
+            }
+
+            const uniquePhotoIds = Array.from(new Set((dayPhotos || []).map((p) => p.id).filter(Boolean)));
+            if (uniquePhotoIds.length === 0) {
+              console.info(`[${event.id}] No photos found for pass day ${dayRange.selectedDate}`);
+              continue;
+            }
+
+            const unlockRows = uniquePhotoIds.map((photoId) => ({
+              user_id: userId,
+              photo_id: photoId,
+              unlocked_at: purchasedAtIso,
+            }));
+
+            const { error: passUnlockError } = await supabase
+              .from('unlocked_photos')
+              .upsert(unlockRows, {
+                onConflict: 'user_id,photo_id',
+                ignoreDuplicates: true,
+              });
+
+            if (passUnlockError) {
+              console.error(`[${event.id}] Error unlocking day-pass photos:`, passUnlockError);
+            } else {
+              unlockedCount += uniquePhotoIds.length;
+              console.info(`[${event.id}] Unlocked ${uniquePhotoIds.length} photos for pass day`);
+
+              const leaderboardRows = (dayPhotos || []).map((photo: PhotoForLeaderboard) => ({
+                user_id: userId,
+                photo_id: photo.id,
+                speed_kmh: resolveSpeedForLeaderboard(photo.speed_kmh, photo.storage_path),
+                ride_date: toDateOnly(photo.captured_at),
+              }));
+
+              if (leaderboardRows.length > 0) {
+                const { error: leaderboardError } = await supabase
+                  .from('leaderboard_entries')
+                  .upsert(leaderboardRows, {
+                    onConflict: 'user_id,photo_id',
+                    ignoreDuplicates: false,
+                  });
+
+                if (leaderboardError) {
+                  console.error(`[${event.id}] Error upserting pass leaderboard entries:`, leaderboardError);
+                }
+              }
             }
           }
         }
@@ -260,6 +358,106 @@ async function handleEvent(event: Stripe.Event) {
       }
     }
   }
+}
+
+function parseSpeedFromStoragePath(storagePath: string | null | undefined): number {
+  if (!storagePath) return 0;
+
+  const fileName = storagePath.split('/').pop() || storagePath;
+  const fileStem = fileName.replace(/\.[^.]+$/, '');
+  const digits = fileStem.replace(/\D/g, '');
+  if (digits.length < 4) return 0;
+
+  const lastFour = digits.slice(-4);
+  const parsed = Number.parseInt(lastFour, 10);
+  if (Number.isNaN(parsed)) return 0;
+  return parsed / 100;
+}
+
+function resolveSpeedForLeaderboard(speedFromDb: number | null | undefined, storagePath: string | null | undefined): number {
+  if (typeof speedFromDb === 'number' && Number.isFinite(speedFromDb) && speedFromDb > 0) {
+    return speedFromDb;
+  }
+  return parseSpeedFromStoragePath(storagePath);
+}
+
+function toDateOnly(isoOrDateString: string): string {
+  return new Date(isoOrDateString).toISOString().slice(0, 10);
+}
+
+async function upsertLeaderboardEntryForPhoto(userId: string, photoId: string, eventId: string) {
+  const { data: photo, error: photoError } = await supabase
+    .from('photos')
+    .select('id, speed_kmh, captured_at, storage_path')
+    .eq('id', photoId)
+    .maybeSingle();
+
+  if (photoError || !photo) {
+    console.error(`[${eventId}] Error loading photo for leaderboard:`, photoError || `missing photo ${photoId}`);
+    return;
+  }
+
+  const { error: leaderboardError } = await supabase
+    .from('leaderboard_entries')
+    .upsert(
+      {
+        user_id: userId,
+        photo_id: photo.id,
+        speed_kmh: resolveSpeedForLeaderboard(photo.speed_kmh, photo.storage_path),
+        ride_date: toDateOnly(photo.captured_at),
+      },
+      {
+        onConflict: 'user_id,photo_id',
+        ignoreDuplicates: false,
+      },
+    );
+
+  if (leaderboardError) {
+    console.error(`[${eventId}] Error upserting leaderboard entry:`, leaderboardError);
+  }
+}
+
+function getDayRangeInUtc(selectedDate: string | null, fallbackIso: string) {
+  const fallbackDate = new Date(fallbackIso);
+  const day = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+    ? selectedDate
+    : fallbackDate.toISOString().slice(0, 10);
+
+  const [year, month, date] = day.split('-').map((n) => parseInt(n, 10));
+  const start = new Date(Date.UTC(year, month - 1, date, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month - 1, date + 1, 0, 0, 0, 0));
+
+  return {
+    selectedDate: day,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+  };
+}
+
+async function findRepresentativePhotoIdForPurchase(cartItems: CheckoutCartItem[], fallbackIso: string) {
+  const photoItem = cartItems.find((item) => item.type === 'photo' && !!item.photoId);
+  if (photoItem?.photoId) {
+    return photoItem.photoId;
+  }
+
+  const passItem = cartItems.find((item) => item.type === 'pass');
+  if (passItem) {
+    const dayRange = getDayRangeInUtc(passItem.selectedDate ?? null, fallbackIso);
+    const { data: passDayPhoto } = await supabase
+      .from('photos')
+      .select('id')
+      .gte('captured_at', dayRange.startIso)
+      .lt('captured_at', dayRange.endIso)
+      .order('captured_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (passDayPhoto?.id) {
+      return passDayPhoto.id;
+    }
+  }
+
+  return null;
 }
 
 // based on the excellent https://github.com/t3dotgg/stripe-recommendations

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Dimensions } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { BarcodeScanningResult } from 'expo-camera';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { CameraView, CameraType, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { X, Camera, Flashlight, FlashlightOff, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
@@ -12,6 +11,7 @@ import Animated, {
   interpolate,
   Easing
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -22,6 +22,7 @@ interface QRScannerProps {
 }
 
 export default function QRScanner({ onScanSuccess, onClose, onError }: QRScannerProps) {
+  const { t } = useTranslation();
   const [facing, setFacing] = useState<CameraType>('back');
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
@@ -51,11 +52,11 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
     const timeout = setTimeout(() => {
       if (!hasScanned) {
         Alert.alert(
-          'Kein QR-Code erkannt',
-          'Es wurde kein QR-Code gefunden. Stellen Sie sicher, dass der Code gut sichtbar ist und versuchen Sie es erneut.',
+          t('qr.noCodeDetectedTitle'),
+          t('qr.noCodeDetectedDescription'),
           [
-            { text: 'Erneut versuchen', style: 'default' },
-            { text: 'Abbrechen', style: 'cancel', onPress: onClose },
+            { text: t('home.tryAgain'), style: 'default' },
+            { text: t('common.cancel'), style: 'cancel', onPress: onClose },
           ]
         );
       }
@@ -76,11 +77,11 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
       requestPermission().then((result) => {
         if (!result.granted) {
           Alert.alert(
-            'Kamera-Berechtigung erforderlich',
-            'Um QR-Codes zu scannen, benötigen wir Zugriff auf Ihre Kamera. Dies ist notwendig, um Ihre Fotos von der Sommerrodelbahn zu finden.',
+            t('home.cameraAccessRequired'),
+            t('home.cameraAccessDescription'),
             [
-              { text: 'Abbrechen', style: 'cancel', onPress: onClose },
-              { text: 'Berechtigung erteilen', onPress: () => requestPermission() },
+              { text: t('common.cancel'), style: 'cancel', onPress: onClose },
+              { text: t('home.grantPermission'), onPress: () => requestPermission() },
             ]
           );
         }
@@ -97,11 +98,11 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
     // Validate QR code format
     if (!data || data.length < 8) {
       Alert.alert(
-        'Ungültiger QR-Code',
-        'Der gescannte Code ist nicht gültig. Bitte versuchen Sie es erneut oder wenden Sie sich an das Personal.',
+        t('home.invalidQRCode'),
+        t('home.invalidQRCodeDescription'),
         [
           { 
-            text: 'Erneut scannen', 
+            text: t('home.scanAgain'), 
             onPress: () => {
               setHasScanned(false);
               const newTimeout = setTimeout(() => {
@@ -112,7 +113,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
               setScanTimeout(newTimeout);
             }
           },
-          { text: 'Abbrechen', style: 'cancel', onPress: onClose },
+          { text: t('common.cancel'), style: 'cancel', onPress: onClose },
         ]
       );
       return;
@@ -177,7 +178,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
   if (!permission) {
     return (
       <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>Kamera-Berechtigung wird überprüft...</Text>
+        <Text style={styles.permissionText}>{t('qr.checkingCameraPermission')}</Text>
       </View>
     );
   }
@@ -186,15 +187,15 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
     return (
       <View style={styles.permissionContainer}>
         <Camera size={80} color="#666" />
-        <Text style={styles.permissionTitle}>Kamera-Zugriff erforderlich</Text>
+        <Text style={styles.permissionTitle}>{t('home.cameraAccessRequired')}</Text>
         <Text style={styles.permissionText}>
-          Um QR-Codes zu scannen, benötigen wir Zugriff auf Ihre Kamera.
+          {t('qr.cameraAccessShort')}
         </Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Berechtigung erteilen</Text>
+          <Text style={styles.permissionButtonText}>{t('home.grantPermission')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-          <Text style={styles.cancelButtonText}>Abbrechen</Text>
+          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -220,7 +221,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <X size={24} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.title}>QR-Code scannen</Text>
+            <Text style={styles.title}>{t('home.scanQRTitle')}</Text>
             <View style={styles.placeholder} />
           </View>
 
@@ -241,11 +242,11 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
             </View>
             
             <Text style={styles.instruction}>
-              Richten Sie die Kamera auf den QR-Code
+              {t('qr.pointCameraToCode')}
             </Text>
             
             <Text style={styles.subInstruction}>
-              Der Code befindet sich an Ihrem Platz oder am Ausgang
+              {t('home.scanInstruction')}
             </Text>
           </View>
 
@@ -253,7 +254,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
           <View style={styles.controls}>
             <TouchableOpacity style={styles.controlButton} onPress={flipCamera}>
               <RotateCcw size={24} color="#fff" />
-              <Text style={styles.controlText}>Kamera wechseln</Text>
+              <Text style={styles.controlText}>{t('home.switchCamera')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.controlButton} onPress={toggleFlash}>
@@ -263,7 +264,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
                 <Flashlight size={24} color="#fff" />
               )}
               <Text style={styles.controlText}>
-                {flashEnabled ? 'Blitz aus' : 'Blitz an'}
+                {flashEnabled ? t('qr.flashOff') : t('qr.flashOn')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -271,7 +272,7 @@ export default function QRScanner({ onScanSuccess, onClose, onError }: QRScanner
           {/* Privacy Notice */}
           <View style={styles.privacyNotice}>
             <Text style={styles.privacyText}>
-              🔒 Die Kamera wird nur zum Scannen verwendet und speichert keine Bilder
+              {t('qr.privacyNotice')}
             </Text>
           </View>
         </LinearGradient>

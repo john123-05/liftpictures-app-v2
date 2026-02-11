@@ -81,11 +81,86 @@ const content = {
     },
     finalCta: '¿Listo para probar la demo?',
   },
+  fr: {
+    headline: 'Application Liftpictures – Photos, billets et expériences sur votre smartphone',
+    subline: "Achetez des photos, sauvegardez vos souvenirs et prolongez l'expérience du parc.",
+    ctaPrimary: "Tester l'application démo",
+    ctaSecondary: 'Nous contacter',
+    features: {
+      photos: {
+        title: 'Photos automatiques',
+        text: 'Photos et vidéos automatiques sur les attractions',
+      },
+      gallery: {
+        title: 'Galerie et compte',
+        text: 'Toutes les photos dans un compte personnel',
+      },
+      purchase: {
+        title: 'Achat facile',
+        text: "Vente de photos, pass photo et billets dans l'application",
+      },
+      marketing: {
+        title: 'Marketing et push',
+        text: 'Notifications push et visites répétées',
+      },
+    },
+    finalCta: 'Prêt à tester la démo ?',
+  },
+  it: {
+    headline: 'App Liftpictures – Foto, biglietti ed esperienze sul tuo smartphone',
+    subline: "Acquista foto, salva ricordi e prolunga l'esperienza del parco.",
+    ctaPrimary: "Prova l'app demo",
+    ctaSecondary: 'Contattaci',
+    features: {
+      photos: {
+        title: 'Foto automatiche',
+        text: 'Foto e video automatici nelle attrazioni',
+      },
+      gallery: {
+        title: 'Galleria e account',
+        text: 'Tutte le foto in un account personale',
+      },
+      purchase: {
+        title: 'Acquisto facile',
+        text: "Vendita foto, pass foto e biglietti nell'app",
+      },
+      marketing: {
+        title: 'Marketing e push',
+        text: 'Notifiche push e visite ripetute',
+      },
+    },
+    finalCta: 'Pronto a provare la demo?',
+  },
+  nl: {
+    headline: 'Liftpictures app – Foto’s, tickets en ervaringen op je smartphone',
+    subline: "Koop foto's, bewaar herinneringen en verleng de parkervaring.",
+    ctaPrimary: 'Demo-app testen',
+    ctaSecondary: 'Contact opnemen',
+    features: {
+      photos: {
+        title: "Automatische foto's",
+        text: "Automatische foto's en video's bij attracties",
+      },
+      gallery: {
+        title: 'Galerij en account',
+        text: 'Alle foto’s in één persoonlijk account',
+      },
+      purchase: {
+        title: 'Eenvoudig kopen',
+        text: 'Verkoop van foto’s, fotopas en tickets in de app',
+      },
+      marketing: {
+        title: 'Marketing en push',
+        text: 'Pushmeldingen en herhaalbezoeken',
+      },
+    },
+    finalCta: 'Klaar om de demo te proberen?',
+  },
 };
 
 export default function LandingPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<'de' | 'en' | 'es'>('de');
+  const [lang, setLang] = useState<'de' | 'en' | 'es' | 'fr' | 'it' | 'nl'>('de');
   const t = content[lang];
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -99,6 +174,9 @@ export default function LandingPage() {
       de: 'https://www.liftpictures.com/kontakt',
       en: 'https://www.liftpictures.com/en/kontakt',
       es: 'https://www.liftpictures.com/es/kontakt',
+      fr: 'https://www.liftpictures.com/en/kontakt',
+      it: 'https://www.liftpictures.com/en/kontakt',
+      nl: 'https://www.liftpictures.com/en/kontakt',
     };
     Linking.openURL(contactUrls[lang]);
   };
@@ -120,6 +198,15 @@ export default function LandingPage() {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setLang('es')} style={[styles.langButton, lang === 'es' && styles.langButtonActive]}>
             <Text style={[styles.langText, lang === 'es' && styles.langTextActive]}>ES</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setLang('fr')} style={[styles.langButton, lang === 'fr' && styles.langButtonActive]}>
+            <Text style={[styles.langText, lang === 'fr' && styles.langTextActive]}>FR</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setLang('it')} style={[styles.langButton, lang === 'it' && styles.langButtonActive]}>
+            <Text style={[styles.langText, lang === 'it' && styles.langTextActive]}>IT</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setLang('nl')} style={[styles.langButton, lang === 'nl' && styles.langButtonActive]}>
+            <Text style={[styles.langText, lang === 'nl' && styles.langTextActive]}>NL</Text>
           </TouchableOpacity>
         </View>
       </View>

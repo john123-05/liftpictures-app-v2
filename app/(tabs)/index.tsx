@@ -22,7 +22,7 @@ import {
   Gift
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -30,8 +30,10 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/LanguageSelector';
 import RideCaptureModal from '@/components/RideCaptureModal';
+import { supabase } from '@/lib/supabase';
 
 export default function HomeScreen() {
+  const params = useLocalSearchParams<{ captureRide?: string }>();
   const { t, i18n } = useTranslation();
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -48,6 +50,10 @@ export default function HomeScreen() {
   const { addToCart } = useCart();
   const [debugInfo, setDebugInfo] = useState('');
   const [hasShownClosingModal, setHasShownClosingModal] = useState(false);
+  const [isSubscribingNewsletter, setIsSubscribingNewsletter] = useState(false);
+  const [newsletterPopupEnabled, setNewsletterPopupEnabled] = useState(true);
+  const [newsletterSettingsLoaded, setNewsletterSettingsLoaded] = useState(false);
+  const [newsletterFeedback, setNewsletterFeedback] = useState('');
 
   // Generate available dates (next 30 days)
   const generateAvailableDates = () => {
@@ -84,9 +90,64 @@ export default function HomeScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    if (params.captureRide === '1') {
+      setShowRideCaptureModal(true);
+      router.replace('/(tabs)');
+    }
+  }, [params.captureRide]);
+
+  useEffect(() => {
+    if (!showClosingModal) {
+      setNewsletterFeedback('');
+    }
+  }, [showClosingModal]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadNewsletterSettings = async () => {
+      if (!user?.id) {
+        if (!active) return;
+        setNewsletterPopupEnabled(true);
+        setNewsletterSettingsLoaded(true);
+        return;
+      }
+
+      setNewsletterSettingsLoaded(false);
+      try {
+        const { data, error } = await supabase
+          .from('newsletter_subscriptions')
+          .select('popup_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!active) return;
+
+        if (error) {
+          console.error('Error loading newsletter popup settings:', error);
+          setNewsletterPopupEnabled(true);
+        } else {
+          setNewsletterPopupEnabled(data?.popup_enabled ?? true);
+        }
+      } catch (error) {
+        if (!active) return;
+        console.error('Error loading newsletter popup settings:', error);
+        setNewsletterPopupEnabled(true);
+      } finally {
+        if (active) setNewsletterSettingsLoaded(true);
+      }
+    };
+
+    loadNewsletterSettings();
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
   // Show closing popup after 15 seconds
   useEffect(() => {
-    if (loading || hasShownClosingModal) {
+    if (loading || hasShownClosingModal || !newsletterSettingsLoaded || !newsletterPopupEnabled) {
       return;
     }
 
@@ -96,7 +157,7 @@ export default function HomeScreen() {
     }, 15000);
 
     return () => clearTimeout(timer);
-  }, [loading, hasShownClosingModal]);
+  }, [loading, hasShownClosingModal, newsletterSettingsLoaded, newsletterPopupEnabled]);
 
   // Debug authentication state
   useEffect(() => {
@@ -160,13 +221,15 @@ export default function HomeScreen() {
   };
 
   const handleAddFotopassToCart = () => {
+    const today = new Date().toISOString().split('T')[0];
     const fotopass = {
-      id: 'tagesfotopass',
+      id: `tagesfotopass_${today}`,
       name: t('photoPass.title'),
       title: t('photoPass.title'),
       price: 14.99,
       type: 'pass',
-      description: t('photoPass.title')
+      description: t('photoPass.title'),
+      selectedDate: today,
     };
 
     addToCart(fotopass);
@@ -226,6 +289,65 @@ export default function HomeScreen() {
 
   const handleMap = () => {
     router.push('/map');
+  };
+
+  const handleSubscribeNewsletter = async () => {
+    if (!user?.id) {
+      Alert.alert('Hinweis', 'Bitte zuerst anmelden, um den Newsletter zu abonnieren.');
+      return;
+    }
+
+    setIsSubscribingNewsletter(true);
+    setNewsletterFeedback('');
+    try {
+      const nowIso = new Date().toISOString();
+      const { data: existing, error: existingError } = await supabase
+        .from('newsletter_subscriptions')
+        .select('subscribed, popup_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (existing?.subscribed) {
+        setNewsletterFeedback('Sie sind bereits fuer den Newsletter angemeldet.');
+        Alert.alert('Hinweis', 'Sie sind bereits fuer den Newsletter angemeldet.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('newsletter_subscriptions')
+        .upsert(
+          {
+            user_id: user.id,
+            email: user.email || null,
+            subscribed: true,
+            subscribed_at: nowIso,
+            unsubscribed_at: null,
+            source: 'closing_modal',
+            popup_enabled: existing?.popup_enabled ?? true,
+          } as any,
+          { onConflict: 'user_id' },
+        );
+
+      if (error) throw error;
+
+      setNewsletterFeedback('Danke fuer dein Abonnement.');
+      Alert.alert(
+        t('closingModal.subscribed'),
+        t('closingModal.subscribedDescription'),
+        [{ text: t('closingModal.perfect'), style: 'default' }]
+      );
+      setTimeout(() => {
+        setShowClosingModal(false);
+      }, 1200);
+    } catch (error: any) {
+      const msg = error?.message || 'Newsletter konnte nicht gespeichert werden.';
+      setNewsletterFeedback(msg);
+      Alert.alert('Fehler', msg);
+    } finally {
+      setIsSubscribingNewsletter(false);
+    }
   };
 
   const closeCamera = () => {
@@ -563,20 +685,17 @@ export default function HomeScreen() {
               <View style={styles.closingModalFooter}>
                 <TouchableOpacity
                   style={styles.newsletterButton}
-                  onPress={() => {
-                    setShowClosingModal(false);
-                    Alert.alert(
-                      t('closingModal.subscribed'),
-                      t('closingModal.subscribedDescription'),
-                      [{ text: t('closingModal.perfect'), style: 'default' }]
-                    );
-                  }}
+                  onPress={handleSubscribeNewsletter}
+                  disabled={isSubscribingNewsletter}
                 >
                   <Mail size={20} color="#000" />
                   <Text style={styles.newsletterButtonText}>
-                    {t('closingModal.subscribeNewsletter')}
+                    {isSubscribingNewsletter ? 'Speichert...' : t('closingModal.subscribeNewsletter')}
                   </Text>
                 </TouchableOpacity>
+                {newsletterFeedback ? (
+                  <Text style={styles.newsletterFeedbackText}>{newsletterFeedback}</Text>
+                ) : null}
 
                 <TouchableOpacity
                   style={styles.ticketBookButton}
@@ -1510,6 +1629,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     marginLeft: 8,
+  },
+  newsletterFeedbackText: {
+    marginTop: 8,
+    marginBottom: 10,
+    fontSize: 13,
+    color: '#9ad29a',
+    textAlign: 'center',
   },
   // Demo Modal Styles
   demoModalOverlay: {

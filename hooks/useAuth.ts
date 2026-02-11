@@ -8,6 +8,8 @@ export interface UserProfile {
   vorname: string;
   nachname: string;
   created_at: string;
+  avatar_url?: string | null;
+  display_name?: string | null;
 }
 
 export interface AuthState {
@@ -103,13 +105,23 @@ export function useAuth() {
             vorname: userData.vorname,
             nachname: userData.nachname,
             created_at: userData.created_at,
+            avatar_url: userData.avatar_url ?? session.user.user_metadata?.avatar_url ?? null,
+            display_name: userData.display_name ?? session.user.user_metadata?.display_name ?? null,
           },
           session,
           loading: false,
         });
       } else {
         setAuthState({
-          user: null,
+          user: {
+            id: session.user.id,
+            email: session.user.email || '',
+            vorname: session.user.user_metadata?.first_name || '',
+            nachname: session.user.user_metadata?.last_name || '',
+            created_at: session.user.created_at || new Date().toISOString(),
+            avatar_url: session.user.user_metadata?.avatar_url ?? null,
+            display_name: session.user.user_metadata?.display_name ?? null,
+          },
           session,
           loading: false,
         });

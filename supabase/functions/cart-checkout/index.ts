@@ -112,6 +112,8 @@ Deno.serve(async (req: Request) => {
           quantity: item.quantity,
           price: item.price,
           type: item.type,
+          selectedDate: item.selectedDate,
+          title: item.title || item.name || null,
         }))),
       },
     });

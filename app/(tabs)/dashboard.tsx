@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Trophy, Clock, Zap, Target, Medal, TrendingUp, Trash2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -9,17 +9,11 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 
-interface StatCard {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  color: string;
-}
-
 interface LeaderboardEntry {
   rank: number;
+  userId: string;
   name: string;
+  avatarUrl: string | null;
   speed: number;
   time: string;
   isCurrentUser?: boolean;
@@ -34,60 +28,63 @@ interface Ride {
   created_at: string;
 }
 
-const getStatCards = (t: any): StatCard[] => [
-  {
-    title: t('dashboard.ridesToday'),
-    value: '3',
-    subtitle: t('dashboard.personalRecord'),
-    icon: <Target size={24} color="#ff6b35" />,
-    color: '#ff6b35',
-  },
-  {
-    title: t('dashboard.bestTime'),
-    value: '1:24.5',
-    subtitle: t('dashboard.newBestTime'),
-    icon: <Clock size={24} color="#00c851" />,
-    color: '#00c851',
-  },
-  {
-    title: t('dashboard.topSpeed'),
-    value: '45.2 km/h',
-    subtitle: t('dashboard.achievedToday'),
-    icon: <Zap size={24} color="#2196f3" />,
-    color: '#2196f3',
-  },
-  {
-    title: t('dashboard.dailyRanking'),
-    value: '#7',
-    subtitle: t('dashboard.ofRiders', { count: 43 }),
-    icon: <Trophy size={24} color="#ffc107" />,
-    color: '#ffc107',
-  },
-];
+const parseSpeedFromStoragePath = (storagePath?: string | null): number => {
+  if (!storagePath) return 0;
+  const fileName = storagePath.split('/').pop() || storagePath;
+  const stem = fileName.replace(/\.[^.]+$/, '');
+  const digits = stem.replace(/\D/g, '');
+  if (digits.length < 4) return 0;
+  const parsed = Number.parseInt(digits.slice(-4), 10);
+  if (Number.isNaN(parsed)) return 0;
+  return parsed / 100;
+};
 
-const getLeaderboard = (t: any): LeaderboardEntry[] => [
-  { rank: 1, name: 'Max Mustermann', speed: 48.3, time: '1:18.2' },
-  { rank: 2, name: 'Anna Schmidt', speed: 47.1, time: '1:19.8' },
-  { rank: 3, name: 'Tom Weber', speed: 46.8, time: '1:21.4' },
-  { rank: 4, name: 'Lisa Müller', speed: 46.2, time: '1:22.1' },
-  { rank: 5, name: 'Chris Bauer', speed: 45.9, time: '1:23.3' },
-  { rank: 6, name: 'Sarah Klein', speed: 45.5, time: '1:24.0' },
-  { rank: 7, name: t('dashboard.you'), speed: 45.2, time: '1:24.5', isCurrentUser: true },
-  { rank: 8, name: 'Mike Johnson', speed: 44.8, time: '1:25.2' },
-];
+const resolveSpeed = (speedFromDb?: number | null, storagePath?: string | null): number => {
+  if (typeof speedFromDb === 'number' && Number.isFinite(speedFromDb) && speedFromDb > 0) {
+    return speedFromDb;
+  }
+  return parseSpeedFromStoragePath(storagePath);
+};
+
+const pickJoinedRecord = <T,>(value: T | T[] | null | undefined): T | null => {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] || null;
+  return value;
+};
+
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const resolveAvatarUrl = async (avatarRef?: string | null): Promise<string | null> => {
+  if (!avatarRef) return null;
+  if (avatarRef.startsWith('http')) return avatarRef;
+
+  const { data: signedData } = await supabase.storage
+    .from('avatars')
+    .createSignedUrl(avatarRef, 60 * 60 * 24 * 365);
+
+  if (signedData?.signedUrl) return signedData.signedUrl;
+
+  const { data: publicData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarRef);
+  return publicData.publicUrl || null;
+};
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { user } = useAuthContext();
   const [ridesToday, setRidesToday] = useState(0);
   const [todayRides, setTodayRides] = useState<Ride[]>([]);
-  const [loading, setLoading] = useState(true);
   const [topSpeed, setTopSpeed] = useState<number | null>(null);
   const [hasPurchasedPhotos, setHasPurchasedPhotos] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-
-  const statCards = getStatCards(t);
-  const leaderboard = getLeaderboard(t);
+  const [dailyRank, setDailyRank] = useState<number | null>(null);
+  const [rankingUserCount, setRankingUserCount] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -110,7 +107,6 @@ export default function DashboardScreen() {
   const fetchRidesToday = async () => {
     if (!user) return;
 
-    setLoading(true);
     try {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
@@ -131,8 +127,6 @@ export default function DashboardScreen() {
       setTodayRides(data || []);
     } catch (error) {
       console.error('Error fetching rides:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -141,22 +135,24 @@ export default function DashboardScreen() {
 
     try {
       const { data, error } = await supabase
-        .from('photos')
+        .from('unlocked_photos')
         .select(`
-          speed_kmh,
-          purchases!inner(user_id, status)
+          photos!inner(speed_kmh, storage_path)
         `)
-        .eq('purchases.user_id', user.id)
-        .eq('purchases.status', 'paid')
-        .not('speed_kmh', 'is', null)
-        .order('speed_kmh', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      if (data && data.speed_kmh) {
-        setTopSpeed(parseFloat(data.speed_kmh));
+      const speeds = (data || [])
+        .map((entry: any) => {
+          const photo = pickJoinedRecord<any>(entry.photos);
+          return resolveSpeed(photo?.speed_kmh ?? null, photo?.storage_path ?? null);
+        })
+        .filter((speed: number) => speed > 0);
+
+      if (speeds.length > 0) {
+        const best = Math.max(...speeds);
+        setTopSpeed(best);
         setHasPurchasedPhotos(true);
       } else {
         setTopSpeed(null);
@@ -174,53 +170,170 @@ export default function DashboardScreen() {
 
     try {
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      const localDate = toLocalDateString(today);
+      const utcDate = today.toISOString().slice(0, 10);
+      const dateFilter = Array.from(new Set([localDate, utcDate]));
 
       const { data, error } = await supabase
-        .from('photos')
+        .from('leaderboard_entries')
         .select(`
           speed_kmh,
-          captured_at,
-          purchases!inner(user_id, status),
-          users!inner(vorname, nachname)
+          user_id,
+          photos!inner(captured_at, storage_path)
         `)
-        .eq('purchases.status', 'paid')
-        .not('speed_kmh', 'is', null)
-        .gte('captured_at', startOfDay.toISOString())
-        .lte('captured_at', endOfDay.toISOString())
+        .in('ride_date', dateFilter)
         .order('speed_kmh', { ascending: false })
-        .limit(10);
+        .limit(500);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const leaderboardEntries: LeaderboardEntry[] = data.map((entry: any, index: number) => {
-          const capturedTime = new Date(entry.captured_at);
-          const timeStr = `${Math.floor(Math.random() * 2) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}.${Math.floor(Math.random() * 10)}`;
+        const topByUser = new Map<string, any>();
 
-          const userName = entry.users?.vorname && entry.users?.nachname
-            ? `${entry.users.vorname} ${entry.users.nachname}`
-            : 'Anonymer Fahrer';
+        for (const entry of data as any[]) {
+          const userId = entry.user_id as string;
+          if (!userId) continue;
+          const photo = pickJoinedRecord<any>(entry.photos);
+          const resolvedSpeed = resolveSpeed(entry.speed_kmh, photo?.storage_path);
+          if (resolvedSpeed <= 0) continue;
 
-          const isCurrentUser = entry.purchases.some((p: any) => p.user_id === user.id);
+          const existing = topByUser.get(userId);
+          if (!existing || resolvedSpeed > existing.speed) {
+            topByUser.set(userId, {
+              userId,
+              speed: resolvedSpeed,
+              capturedAt: photo?.captured_at,
+            });
+          }
+        }
 
-          return {
-            rank: index + 1,
-            name: isCurrentUser ? t('dashboard.you') : userName,
-            speed: parseFloat(entry.speed_kmh),
-            time: timeStr,
-            isCurrentUser,
-          };
+        const userIds = Array.from(topByUser.keys());
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, vorname, nachname, avatar_url')
+          .in('id', userIds);
+
+        if (usersError) {
+          console.error('Error fetching user profiles for leaderboard:', usersError);
+        }
+
+        const profileByUserId = new Map<string, { vorname: string | null; nachname: string | null; avatar_url: string | null }>();
+        (usersData || []).forEach((row: any) => {
+          profileByUserId.set(row.id, {
+            vorname: row.vorname ?? null,
+            nachname: row.nachname ?? null,
+            avatar_url: row.avatar_url ?? null,
+          });
         });
 
-        setLeaderboardData(leaderboardEntries);
+        const allRanked = Array.from(topByUser.values())
+          .sort((a, b) => b.speed - a.speed)
+          .map((entry, index) => {
+            const capturedTime = entry.capturedAt ? new Date(entry.capturedAt) : null;
+            const timeStr = capturedTime
+              ? capturedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+              : '--:--';
+            const profile = profileByUserId.get(entry.userId);
+            const isCurrentUser = entry.userId === user.id;
+            const displayName = isCurrentUser
+              ? (user.display_name?.trim()
+                || `${user.vorname || ''} ${user.nachname || ''}`.trim()
+                || 'Du')
+              : (profile?.vorname || profile?.nachname
+                ? `${profile?.vorname || ''} ${profile?.nachname || ''}`.trim()
+                : 'Anonymer Fahrer');
+            const renderedName = isCurrentUser ? `${displayName} (${t('dashboard.you')})` : displayName;
+
+            return {
+              rank: index + 1,
+              userId: entry.userId,
+              name: renderedName,
+              avatarUrl: isCurrentUser ? (user.avatar_url ?? profile?.avatar_url ?? null) : (profile?.avatar_url ?? null),
+              speed: entry.speed,
+              time: timeStr,
+              isCurrentUser,
+            } as LeaderboardEntry;
+          });
+
+        if (!allRanked.some((entry) => entry.userId === user.id)) {
+          const startOfDay = new Date(today);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(today);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const { data: myTodayPhotos, error: myTodayPhotosError } = await supabase
+            .from('unlocked_photos')
+            .select(`
+              photos!inner(speed_kmh, storage_path, captured_at)
+            `)
+            .eq('user_id', user.id);
+
+          if (myTodayPhotosError) {
+            console.error('Error fetching fallback user ranking:', myTodayPhotosError);
+          } else {
+            const bestMyEntry = (myTodayPhotos || [])
+              .map((row: any) => pickJoinedRecord<any>(row.photos))
+              .filter((photo: any) => {
+                if (!photo?.captured_at) return false;
+                const captured = new Date(photo.captured_at);
+                return captured >= startOfDay && captured <= endOfDay;
+              })
+              .map((photo: any) => ({
+                speed: resolveSpeed(photo?.speed_kmh ?? null, photo?.storage_path ?? null),
+                capturedAt: photo?.captured_at,
+              }))
+              .filter((entry: any) => entry.speed > 0)
+              .sort((a: any, b: any) => b.speed - a.speed)[0];
+
+            if (bestMyEntry) {
+              const profile = profileByUserId.get(user.id);
+              const displayName = user.display_name?.trim()
+                || `${user.vorname || ''} ${user.nachname || ''}`.trim()
+                || (profile?.vorname || profile?.nachname
+                  ? `${profile?.vorname || ''} ${profile?.nachname || ''}`.trim()
+                  : 'Du');
+
+              allRanked.push({
+                rank: allRanked.length + 1,
+                userId: user.id,
+                name: `${displayName} (${t('dashboard.you')})`,
+                avatarUrl: profile?.avatar_url ?? user.avatar_url ?? null,
+                speed: bestMyEntry.speed,
+                time: bestMyEntry.capturedAt
+                  ? new Date(bestMyEntry.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                  : '--:--',
+                isCurrentUser: true,
+              });
+
+              allRanked.sort((a, b) => b.speed - a.speed);
+              allRanked.forEach((entry, index) => {
+                entry.rank = index + 1;
+              });
+            }
+          }
+        }
+
+        const rankedRaw = allRanked.slice(0, 10);
+        const ranked = await Promise.all(
+          rankedRaw.map(async (entry) => ({
+            ...entry,
+            avatarUrl: await resolveAvatarUrl(entry.avatarUrl),
+          })),
+        );
+        setLeaderboardData(ranked);
+        setRankingUserCount(allRanked.length);
+        const me = allRanked.find((entry) => entry.userId === user.id);
+        setDailyRank(me ? me.rank : null);
       } else {
         setLeaderboardData([]);
+        setDailyRank(null);
+        setRankingUserCount(0);
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
       setLeaderboardData([]);
+      setDailyRank(null);
+      setRankingUserCount(0);
     }
   };
 
@@ -257,7 +370,7 @@ export default function DashboardScreen() {
 
     try {
       console.log('Deleting ride from Supabase...');
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('rides')
         .delete()
         .eq('id', rideId)
@@ -303,11 +416,11 @@ export default function DashboardScreen() {
           <View style={styles.statCard}>
             <View style={styles.statHeader}>
               <Clock size={24} color="#00c851" />
-              <Text style={styles.statTitle}>{statCards[1].title}</Text>
+              <Text style={styles.statTitle}>{t('dashboard.bestTime')}</Text>
             </View>
-            <Text style={styles.statValue}>{statCards[1].value}</Text>
+            <Text style={styles.statValue}>--:--</Text>
             <Text style={[styles.statSubtitle, { color: '#00c851' }]}>
-              {statCards[1].subtitle}
+              {t('dashboard.newBestTime')}
             </Text>
           </View>
 
@@ -333,11 +446,11 @@ export default function DashboardScreen() {
           <View style={styles.statCard}>
             <View style={styles.statHeader}>
               <Trophy size={24} color="#ffc107" />
-              <Text style={styles.statTitle}>{statCards[3].title}</Text>
+              <Text style={styles.statTitle}>{t('dashboard.dailyRanking')}</Text>
             </View>
-            <Text style={styles.statValue}>{statCards[3].value}</Text>
+            <Text style={styles.statValue}>{dailyRank ? `#${dailyRank}` : '-'}</Text>
             <Text style={[styles.statSubtitle, { color: '#ffc107' }]}>
-              {statCards[3].subtitle}
+              {t('dashboard.ofRiders', { count: rankingUserCount })}
             </Text>
           </View>
         </View>
@@ -413,7 +526,7 @@ export default function DashboardScreen() {
             <View style={styles.leaderboard}>
               {leaderboardData.map((entry) => (
                 <View
-                  key={entry.rank}
+                  key={`${entry.userId}-${entry.rank}`}
                   style={[
                     styles.leaderboardEntry,
                     entry.isCurrentUser && styles.currentUserEntry
@@ -437,15 +550,31 @@ export default function DashboardScreen() {
                   </View>
 
                   <View style={styles.entryInfo}>
-                    <Text style={[
-                      styles.entryName,
-                      entry.isCurrentUser && styles.currentUserName
-                    ]}>
-                      {entry.name}
-                    </Text>
-                    <Text style={styles.entryStats}>
-                      {entry.speed.toFixed(1)} km/h • {entry.time}
-                    </Text>
+                    <View style={styles.entryMainRow}>
+                      {entry.avatarUrl ? (
+                        <Image source={{ uri: entry.avatarUrl }} style={styles.entryAvatar} />
+                      ) : (
+                        <View style={styles.entryAvatarFallback}>
+                          <Text style={styles.entryAvatarFallbackText}>
+                            {(entry.name || '?').trim().charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.entryTextBlock}>
+                        <Text style={[
+                          styles.entryName,
+                          entry.isCurrentUser && styles.currentUserName
+                        ]}>
+                          {entry.name}
+                        </Text>
+                        <Text style={[
+                          styles.entryStats,
+                          entry.isCurrentUser && styles.currentUserName
+                        ]}>
+                          {entry.speed.toFixed(2)} km/h • {entry.time}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
 
                   {entry.isCurrentUser && (
@@ -471,7 +600,10 @@ export default function DashboardScreen() {
           <Text style={styles.motivationText}>
             {t('dashboard.nextGoalDescription')}
           </Text>
-          <TouchableOpacity style={styles.motivationButton}>
+          <TouchableOpacity
+            style={styles.motivationButton}
+            onPress={() => router.push('/(tabs)?captureRide=1')}
+          >
             <Text style={styles.motivationButtonText}>{t('dashboard.startNewRide')}</Text>
           </TouchableOpacity>
         </View>
@@ -612,6 +744,34 @@ const styles = StyleSheet.create({
     color: '#ff6b35',
   },
   entryInfo: {
+    flex: 1,
+  },
+  entryMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  entryAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#333',
+    marginRight: 10,
+  },
+  entryAvatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#333',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  entryAvatarFallbackText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  entryTextBlock: {
     flex: 1,
   },
   entryName: {

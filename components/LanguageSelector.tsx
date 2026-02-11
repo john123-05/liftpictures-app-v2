@@ -7,6 +7,9 @@ const languages = [
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
 ] as const;
 
 export default function LanguageSelector() {
@@ -15,7 +18,7 @@ export default function LanguageSelector() {
 
   const currentLanguage = languages.find(lang => lang.code === language);
 
-  const handleLanguageChange = async (langCode: 'de' | 'en' | 'es') => {
+  const handleLanguageChange = async (langCode: 'de' | 'en' | 'es' | 'fr' | 'it' | 'nl') => {
     await changeLanguage(langCode);
     setShowModal(false);
   };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator, Platform, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Settings, Shield, CircleHelp as HelpCircle, LogOut, Trash2, Bell, Download, Share2, ChevronRight, Clock } from 'lucide-react-native';
+import { User, Shield, CircleHelp as HelpCircle, LogOut, Trash2, Bell, Download, Share2, ChevronRight, Clock, Camera } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +10,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/LanguageSelector';
 import { supabase } from '@/lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 interface MenuSection {
   title: string;
@@ -32,6 +34,43 @@ export default function ProfileScreen() {
   const [photosCount, setPhotosCount] = useState<number>(0);
   const [memberSince, setMemberSince] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmModalVisible, setDeleteConfirmModalVisible] = useState(false);
+  const [deleteCodeModalVisible, setDeleteCodeModalVisible] = useState(false);
+  const [deleteCode, setDeleteCode] = useState('');
+  const [deleteCodeType, setDeleteCodeType] = useState<'reauthentication' | 'email'>('reauthentication');
+
+  const resolveAndSetAvatarUrl = useCallback(async (avatarRef: string | null | undefined) => {
+    if (!avatarRef) {
+      setAvatarUrl(null);
+      return;
+    }
+
+    if (avatarRef.startsWith('http')) {
+      setAvatarUrl(`${avatarRef}${avatarRef.includes('?') ? '&' : '?'}t=${Date.now()}`);
+      return;
+    }
+
+    const { data: signedData } = await supabase.storage
+      .from('avatars')
+      .createSignedUrl(avatarRef, 60 * 60 * 24 * 365);
+
+    if (signedData?.signedUrl) {
+      setAvatarUrl(`${signedData.signedUrl}&t=${Date.now()}`);
+      return;
+    }
+
+    const { data: publicData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(avatarRef);
+    setAvatarUrl(`${publicData.publicUrl}?t=${Date.now()}`);
+  }, []);
+
+  useEffect(() => {
+    resolveAndSetAvatarUrl(user?.avatar_url ?? null);
+  }, [user?.avatar_url, resolveAndSetAvatarUrl]);
 
   const fetchProfileStats = useCallback(async () => {
     if (!user?.id) return;
@@ -66,12 +105,24 @@ export default function ProfileScreen() {
         const formattedDate = formatMemberSince(createdDate);
         setMemberSince(formattedDate);
       }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching avatar:', profileError);
+      } else {
+        await resolveAndSetAvatarUrl(profileData?.avatar_url ?? null);
+      }
     } catch (error) {
       console.error('Error fetching profile stats:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.id, user?.created_at, i18n.language]);
+  }, [user?.id, user?.created_at, i18n.language, resolveAndSetAvatarUrl]);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,15 +149,15 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     Alert.alert(
-      'Logout from Demo',
-      'Are you sure you want to exit? You will need to enter the password again.',
+      t('profile.logoutTitle'),
+      t('profile.logoutDescription'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: t('profile.logoutButton'),
           onPress: async () => {
             await logout();
           },
@@ -114,6 +165,194 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const sendDeleteVerificationEmail = async () => {
+    if (!user?.email) {
+      throw new Error(t('profile.delete.noEmailOnAccount'));
+    }
+
+    const authApi = supabase.auth as any;
+    const hasReauthenticate = typeof authApi.reauthenticate === 'function';
+
+    if (hasReauthenticate) {
+      const { error } = await authApi.reauthenticate();
+      if (error) throw error;
+      setDeleteCodeType('reauthentication');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: user.email,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) throw error;
+    setDeleteCodeType('email');
+  };
+
+  const handleRequestDeleteAccount = () => {
+    if (!user?.id || deletingAccount) {
+      Alert.alert(t('common.error'), t('profile.delete.loginRequired'));
+      return;
+    }
+    setDeleteConfirmModalVisible(true);
+  };
+
+  const handleStartDeleteAccountFlow = async () => {
+    if (!user?.id || deletingAccount) return;
+
+    try {
+      setDeletingAccount(true);
+      setDeleteConfirmModalVisible(false);
+      await sendDeleteVerificationEmail();
+      setDeleteCode('');
+      setDeleteCodeModalVisible(true);
+      Alert.alert(
+        t('profile.delete.requestConfirmedTitle'),
+        t('profile.delete.requestConfirmedDescription', { email: user.email })
+      );
+    } catch (error: any) {
+      console.error('Error requesting account deletion verification:', error);
+      Alert.alert(t('common.error'), error?.message || t('profile.delete.sendVerificationFailed'));
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!user?.email || !deleteCode.trim() || deletingAccount) return;
+
+    try {
+      setDeletingAccount(true);
+
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: user.email,
+        token: deleteCode.trim(),
+        type: deleteCodeType,
+      } as any);
+
+      if (otpError) throw otpError;
+
+      const { error: deleteError } = await supabase.functions.invoke('delete-account', {
+        body: {},
+      });
+
+      if (deleteError) throw deleteError;
+
+      setDeleteCodeModalVisible(false);
+      Alert.alert(t('profile.delete.deletedTitle'), t('profile.delete.deletedDescription'));
+      await supabase.auth.signOut();
+      await logout();
+      router.replace('/auth');
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      Alert.alert(t('common.error'), error?.message || t('profile.delete.deleteFailed'));
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const handlePickProfileImage = async () => {
+    if (!user?.id || uploadingAvatar) return;
+
+    try {
+      if (Platform.OS !== 'web') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert(t('common.error'), t('profile.avatar.permissionRequired'));
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const fileExt = (asset.fileName?.split('.').pop() || asset.uri.split('.').pop() || 'jpg').toLowerCase();
+      const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+      const mimeType = asset.mimeType || 'image/jpeg';
+
+      // Immediate UI preview so users always see the selected image right away.
+      setAvatarUrl(asset.uri);
+      setUploadingAvatar(true);
+
+      let uploadPayload: Blob | ArrayBuffer;
+
+      if (Platform.OS === 'web' && (asset as any).file) {
+        uploadPayload = (asset as any).file as Blob;
+      } else {
+        try {
+          const fileResponse = await fetch(asset.uri);
+          uploadPayload = await fileResponse.blob();
+        } catch {
+          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          const binary = globalThis.atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          uploadPayload = bytes.buffer;
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, uploadPayload, {
+          contentType: mimeType,
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: user.id,
+            email: user.email,
+            avatar_url: filePath,
+          } as any,
+          { onConflict: 'id' },
+        );
+
+      if (updateError) throw updateError;
+
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: filePath,
+        },
+      });
+
+      const { data: refreshedProfile, error: refreshedProfileError } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (refreshedProfileError) throw refreshedProfileError;
+
+      await resolveAndSetAvatarUrl(refreshedProfile?.avatar_url ?? filePath);
+      Alert.alert(t('profile.avatar.savedTitle'));
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      Alert.alert(t('common.error'), error?.message || t('profile.avatar.saveFailed'));
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const menuSections: MenuSection[] = [
@@ -124,7 +363,7 @@ export default function ProfileScreen() {
           icon: <User size={18} color="#ff6b35" />,
           title: t('profile.editProfile'),
           subtitle: t('profile.editProfileDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.comingSoon')),
+          onPress: () => router.push('/edit-profile'),
         },
         {
           icon: <Clock size={18} color="#ff6b35" />,
@@ -136,7 +375,7 @@ export default function ProfileScreen() {
           icon: <Bell size={18} color="#ff6b35" />,
           title: t('profile.notifications'),
           subtitle: t('profile.notificationsDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.comingSoon')),
+          onPress: () => router.push('/notifications'),
         },
       ],
     },
@@ -147,13 +386,13 @@ export default function ProfileScreen() {
           icon: <Download size={18} color="#ff6b35" />,
           title: t('profile.downloadAllPhotos'),
           subtitle: t('profile.downloadAllPhotosDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.downloadStarted')),
+          onPress: () => router.push('/download-all'),
         },
         {
           icon: <Share2 size={18} color="#ff6b35" />,
           title: t('profile.sharePhotos'),
           subtitle: t('profile.sharePhotosDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.comingSoon')),
+          onPress: () => router.push('/(tabs)/gallery?openPurchased=1'),
         },
       ],
     },
@@ -164,24 +403,31 @@ export default function ProfileScreen() {
           icon: <Shield size={18} color="#ff6b35" />,
           title: t('profile.privacy'),
           subtitle: t('profile.privacyDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.comingSoon')),
+          onPress: () => router.push('/privacy'),
         },
         {
           icon: <HelpCircle size={18} color="#ff6b35" />,
           title: t('profile.helpAndSupport'),
           subtitle: t('profile.helpAndSupportDescription'),
-          onPress: () => Alert.alert(t('common.info'), t('profile.comingSoon')),
+          onPress: () => router.push('/support'),
         },
       ],
     },
     {
-      title: 'Demo Access',
+      title: t('profile.demoAccess'),
       items: [
         {
           icon: <LogOut size={18} color="#ff4444" />,
-          title: 'Logout',
-          subtitle: 'Exit the demo site',
+          title: t('profile.logoutButton'),
+          subtitle: t('profile.logoutSubtitle'),
           onPress: handleLogout,
+          destructive: true,
+        },
+        {
+          icon: <Trash2 size={18} color="#ff4444" />,
+          title: deletingAccount ? t('profile.delete.deletingLabel') : t('profile.delete.menuTitle'),
+          subtitle: t('profile.delete.menuSubtitle'),
+          onPress: handleRequestDeleteAccount,
           destructive: true,
         },
       ],
@@ -202,9 +448,21 @@ export default function ProfileScreen() {
             colors={['#ff6b35', '#ff8c42']}
             style={styles.profileGradient}
           >
-            <View style={styles.avatar}>
-              <User size={40} color="#fff" />
-            </View>
+            <TouchableOpacity style={styles.avatar} activeOpacity={0.85} onPress={handlePickProfileImage}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <User size={40} color="#fff" />
+              )}
+              {uploadingAvatar && (
+                <View style={styles.avatarLoadingOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
+              <View style={styles.avatarEditBadge}>
+                <Camera size={12} color="#fff" />
+              </View>
+            </TouchableOpacity>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>
                 {user?.vorname} {user?.nachname}
@@ -278,6 +536,83 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={deleteConfirmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t('profile.delete.confirmTitle')}</Text>
+            <Text style={styles.modalSubtitle}>
+              {t('profile.delete.confirmDescription')}
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalKeepButton}
+                disabled={deletingAccount}
+                onPress={() => setDeleteConfirmModalVisible(false)}
+              >
+                <Text style={styles.modalKeepButtonText}>{t('profile.delete.keepAccessButton')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalDeleteButton, deletingAccount && styles.disabledButton]}
+                disabled={deletingAccount}
+                onPress={handleStartDeleteAccountFlow}
+              >
+                <Text style={styles.modalDeleteButtonText}>{t('profile.delete.confirmDeleteButton')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteCodeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteCodeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t('profile.delete.emailVerificationTitle')}</Text>
+            <Text style={styles.modalSubtitle}>
+              {t('profile.delete.emailVerificationDescription')}
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={deleteCode}
+              onChangeText={setDeleteCode}
+              placeholder={t('profile.delete.codePlaceholder')}
+              placeholderTextColor="#777"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="number-pad"
+              editable={!deletingAccount}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                disabled={deletingAccount}
+                onPress={() => setDeleteCodeModalVisible(false)}
+              >
+                <Text style={styles.modalCancelButtonText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalDeleteButton, (!deleteCode.trim() || deletingAccount) && styles.disabledButton]}
+                disabled={!deleteCode.trim() || deletingAccount}
+                onPress={handleConfirmDeleteAccount}
+              >
+                <Text style={styles.modalDeleteButtonText}>
+                  {deletingAccount ? t('profile.delete.deletingLabel') : t('profile.delete.finalDeleteButton')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -342,6 +677,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+  },
+  avatarLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    marginLeft: -11,
+    marginTop: -11,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileInfo: {
     flex: 1,
@@ -442,5 +805,89 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#121212',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    color: '#b5b5b5',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  modalInput: {
+    backgroundColor: '#1b1b1b',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#303030',
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    color: '#ddd',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalDeleteButton: {
+    flex: 1,
+    backgroundColor: '#cc2f2f',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalDeleteButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalKeepButton: {
+    flex: 1,
+    backgroundColor: '#3a1212',
+    borderWidth: 1,
+    borderColor: '#ff4757',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalKeepButtonText: {
+    color: '#ff5a67',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

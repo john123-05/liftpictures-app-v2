@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Platform, Alert, Linking } from 'react-native';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Platform, Alert, Linking, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart, ShoppingCart, Plus, AlertCircle, X, ChevronRight, Calendar, Clock, Package, Download } from 'lucide-react-native';
+import { Heart, ShoppingCart, Plus, AlertCircle, X, ChevronRight, Calendar, Clock, Package, Download, Share2, Check } from 'lucide-react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import RideCaptureModal from '@/components/RideCaptureModal';
@@ -40,7 +43,36 @@ interface DBPhoto {
   purchases: Array<{ status: string }>;
 }
 
+type SocialPlatform = 'instagram' | 'facebook' | 'x' | 'tiktok';
+
+const parseSpeedFromStoragePath = (storagePath: string): number => {
+  if (!storagePath) return 0;
+
+  const fileName = storagePath.split('/').pop() || storagePath;
+  const fileStem = fileName.replace(/\.[^.]+$/, '');
+  const digits = fileStem.replace(/\D/g, '');
+
+  if (digits.length < 4) return 0;
+
+  const lastFourDigits = digits.slice(-4);
+  const parsed = Number.parseInt(lastFourDigits, 10);
+
+  if (Number.isNaN(parsed)) return 0;
+
+  return parsed / 100;
+};
+
+const resolvePhotoSpeed = (speedFromDb: number | string | null | undefined, storagePath: string): number => {
+  const numericDbSpeed = typeof speedFromDb === 'string' ? Number.parseFloat(speedFromDb) : (speedFromDb ?? 0);
+  if (Number.isFinite(numericDbSpeed) && numericDbSpeed > 0) {
+    return numericDbSpeed;
+  }
+
+  return parseSpeedFromStoragePath(storagePath);
+};
+
 export default function GalleryScreen() {
+  const params = useLocalSearchParams<{ openPurchased?: string }>();
   const { t } = useTranslation();
   const [rides, setRides] = useState<Ride[]>([]);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
@@ -51,14 +83,23 @@ export default function GalleryScreen() {
   const [showPurchasedImages, setShowPurchasedImages] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [purchasedPhotos, setPurchasedPhotos] = useState<Photo[]>([]);
+  const [selectedPurchasedPhoto, setSelectedPurchasedPhoto] = useState<Photo | null>(null);
+  const [showSocialShareOptions, setShowSocialShareOptions] = useState(false);
+  const [favoritePhotoIds, setFavoritePhotoIds] = useState<string[]>([]);
+  const [shareSelectionMode, setShareSelectionMode] = useState(false);
+  const [selectedSharePhotoIds, setSelectedSharePhotoIds] = useState<string[]>([]);
+  const [sharePhotoIds, setSharePhotoIds] = useState<string[]>([]);
   const [loadingPurchased, setLoadingPurchased] = useState(false);
   const { user } = useAuthContext();
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
+  const cartPhotoIds = useMemo(() => new Set(cartItems.map((item) => item.photoId)), [cartItems]);
 
   useEffect(() => {
     if (user) {
+      fetchFavorites();
       fetchRides();
     } else {
+      setFavoritePhotoIds([]);
       setLoading(false);
     }
   }, [user]);
@@ -66,6 +107,7 @@ export default function GalleryScreen() {
   useFocusEffect(
     useCallback(() => {
       if (user) {
+        fetchFavorites();
         fetchRides();
         if (showPurchasedImages) {
           fetchPurchasedPhotos();
@@ -73,6 +115,40 @@ export default function GalleryScreen() {
       }
     }, [user, showPurchasedImages])
   );
+
+  useEffect(() => {
+    const favoriteSet = new Set(favoritePhotoIds);
+
+    setPhotos((prevPhotos) => prevPhotos.map((photo) => ({
+      ...photo,
+      isFavorite: favoriteSet.has(photo.id),
+    })));
+    setAllPhotos((prevAllPhotos) => prevAllPhotos.map((photo) => ({
+      ...photo,
+      isFavorite: favoriteSet.has(photo.id),
+    })));
+    setPurchasedPhotos((prevPurchasedPhotos) => prevPurchasedPhotos.map((photo) => ({
+      ...photo,
+      isFavorite: favoriteSet.has(photo.id),
+    })));
+  }, [favoritePhotoIds]);
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('photo_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setFavoritePhotoIds((data || []).map((row: { photo_id: string }) => row.photo_id));
+    } catch (error: any) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
 
   const fetchPurchasedPhotos = async () => {
     if (!user) return;
@@ -98,6 +174,7 @@ export default function GalleryScreen() {
       if (error) throw error;
 
       if (data && data.length > 0) {
+        const favoriteSet = new Set(favoritePhotoIds);
         const formattedPhotos: Photo[] = await Promise.all(
           data
             .filter((item: any) => item.photos)
@@ -121,11 +198,11 @@ export default function GalleryScreen() {
                   second: '2-digit'
                 }),
                 url: photoUrl,
-                isFavorite: false,
+                isFavorite: favoriteSet.has(photo.id),
                 isPurchased: true,
                 price: 4.99,
                 track: 'Strecke A',
-                speed: photo.speed_kmh ? parseFloat(photo.speed_kmh) : 0,
+                speed: resolvePhotoSpeed(photo.speed_kmh, photo.storage_path),
                 storage_bucket: photo.storage_bucket,
                 storage_path: photo.storage_path,
                 captured_at: photo.captured_at,
@@ -133,7 +210,33 @@ export default function GalleryScreen() {
             })
         );
 
-        setPurchasedPhotos(formattedPhotos);
+        setPurchasedPhotos((prevPurchasedPhotos) => {
+          const existingFavorites = new Map(
+            prevPurchasedPhotos.map((photo) => [photo.id, photo.isFavorite])
+          );
+
+          return formattedPhotos.map((photo) => ({
+            ...photo,
+            isFavorite: existingFavorites.get(photo.id) ?? photo.isFavorite,
+          }));
+        });
+        setAllPhotos((prevAllPhotos) => {
+          const existingFavorites = new Map(
+            prevAllPhotos.map((photo) => [photo.id, photo.isFavorite])
+          );
+          const loadedPhotoIds = new Set(formattedPhotos.map((photo) => photo.id));
+
+          const mergedLoadedPhotos = formattedPhotos.map((photo) => ({
+            ...photo,
+            isFavorite: existingFavorites.get(photo.id) ?? photo.isFavorite,
+          }));
+
+          const photosFromOtherRides = prevAllPhotos.filter(
+            (photo) => !loadedPhotoIds.has(photo.id)
+          );
+
+          return [...photosFromOtherRides, ...mergedLoadedPhotos];
+        });
       } else {
         setPurchasedPhotos([]);
       }
@@ -150,6 +253,15 @@ export default function GalleryScreen() {
       fetchPurchasedPhotos();
     }
   }, [showPurchasedImages, user]);
+
+  useEffect(() => {
+    if (params.openPurchased === '1') {
+      setShowPurchasedImages(true);
+      setShowFavorites(false);
+      setSelectedRide(null);
+      router.replace('/(tabs)/gallery');
+    }
+  }, [params.openPurchased]);
 
   const fetchRides = async () => {
     if (!user) return;
@@ -173,6 +285,8 @@ export default function GalleryScreen() {
   };
 
   const handleRideSelect = async (ride: Ride) => {
+    setShareSelectionMode(false);
+    setSelectedSharePhotoIds([]);
     setSelectedRide(ride);
     setLoading(true);
 
@@ -204,7 +318,7 @@ export default function GalleryScreen() {
             .getPublicUrl(dbPhoto.storage_path);
 
           const isPurchased = dbPhoto.unlocked_photos?.some((u: any) => u.user_id === user?.id) || false;
-          const speed = dbPhoto.speed_kmh ? parseFloat(dbPhoto.speed_kmh) : 0;
+          const speed = resolvePhotoSpeed(dbPhoto.speed_kmh, dbPhoto.storage_path);
 
           return {
             id: dbPhoto.id,
@@ -214,7 +328,7 @@ export default function GalleryScreen() {
               second: '2-digit'
             }),
             url: urlData.publicUrl,
-            isFavorite: false,
+            isFavorite: favoritePhotoIds.includes(dbPhoto.id),
             isPurchased,
             price: 4.99,
             track: 'Strecke A',
@@ -226,6 +340,23 @@ export default function GalleryScreen() {
         });
 
         setPhotos(formattedPhotos);
+        setAllPhotos((prevAllPhotos) => {
+          const existingFavorites = new Map(
+            prevAllPhotos.map((photo) => [photo.id, photo.isFavorite])
+          );
+          const loadedPhotoIds = new Set(formattedPhotos.map((photo) => photo.id));
+
+          const mergedLoadedPhotos = formattedPhotos.map((photo) => ({
+            ...photo,
+            isFavorite: existingFavorites.get(photo.id) ?? photo.isFavorite,
+          }));
+
+          const photosFromOtherRides = prevAllPhotos.filter(
+            (photo) => !loadedPhotoIds.has(photo.id)
+          );
+
+          return [...photosFromOtherRides, ...mergedLoadedPhotos];
+        });
       }
     } catch (error: any) {
       console.error('Error fetching photos:', error);
@@ -235,36 +366,368 @@ export default function GalleryScreen() {
     }
   };
 
-  const toggleFavorite = (id: string) => {
-    setPhotos(photos.map(photo =>
-      photo.id === id ? { ...photo, isFavorite: !photo.isFavorite } : photo
-    ));
-    setAllPhotos(allPhotos.map(photo =>
-      photo.id === id ? { ...photo, isFavorite: !photo.isFavorite } : photo
-    ));
+  const toggleFavorite = async (id: string) => {
+    if (!user) {
+      Alert.alert(t('common.info'), t('gallery.loginFirst'));
+      return;
+    }
+
+    const isCurrentlyFavorite = favoritePhotoIds.includes(id);
+    const shouldFavorite = !isCurrentlyFavorite;
+
+    setFavoritePhotoIds((prevIds) => {
+      if (shouldFavorite) {
+        return prevIds.includes(id) ? prevIds : [...prevIds, id];
+      }
+      return prevIds.filter((photoId) => photoId !== id);
+    });
+
+    try {
+      if (shouldFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            photo_id: id,
+          } as any);
+
+        if (error && !error.message?.includes('duplicate key')) {
+          throw error;
+        }
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('photo_id', id);
+
+        if (error) throw error;
+      }
+    } catch (error: any) {
+      console.error('Error saving favorite:', error);
+      setFavoritePhotoIds((prevIds) => {
+        if (isCurrentlyFavorite) {
+          return prevIds.includes(id) ? prevIds : [...prevIds, id];
+        }
+        return prevIds.filter((photoId) => photoId !== id);
+      });
+      Alert.alert(t('common.error'), t('gallery.favoriteSaveFailed'));
+    }
   };
 
-  const handleAddToCart = (photo: Photo) => {
-    addToCart(photo);
+  const handleAddToCart = (photo: Photo, openCartAfterAdd: boolean = false) => {
+    const result = addToCart(photo);
+    if (result.added) {
+      if (openCartAfterAdd) {
+        Alert.alert(t('gallery.addedToCartTitle'), undefined, [
+          { text: t('common.ok'), onPress: () => router.push('/cart') },
+        ]);
+      } else {
+        Alert.alert(t('gallery.addedToCartTitle'));
+      }
+    } else {
+      if (openCartAfterAdd) {
+        Alert.alert(t('gallery.alreadyInCartTitle'), undefined, [
+          { text: t('gallery.toCartButton'), onPress: () => router.push('/cart') },
+          { text: t('common.ok'), style: 'cancel' },
+        ]);
+      } else {
+        Alert.alert(t('gallery.alreadyInCartTitle'));
+      }
+    }
   };
 
   const handleDownload = async (photo: Photo) => {
     try {
       if (Platform.OS === 'web') {
+        const response = await fetch(photo.url);
+        if (!response.ok) {
+          throw new Error(`Download failed with status ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = photo.url;
+        link.href = blobUrl;
         link.download = `liftpictures-${photo.id}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        Alert.alert('Erfolg', 'Bild wird heruntergeladen');
+        URL.revokeObjectURL(blobUrl);
+        Alert.alert(t('common.success'), t('gallery.downloadStarting'));
       } else {
-        Linking.openURL(photo.url);
+        const permission = await MediaLibrary.requestPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert(t('gallery.permissionRequiredTitle'), t('gallery.permissionRequiredDescription'));
+          return;
+        }
+
+        const directory = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+        if (!directory) {
+          throw new Error('No writable directory available');
+        }
+
+        const fileUri = `${directory}liftpictures-${photo.id}.jpg`;
+        await FileSystem.downloadAsync(photo.url, fileUri);
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        await FileSystem.deleteAsync(fileUri, { idempotent: true });
+
+        Alert.alert(t('common.success'), t('gallery.savedToGallery'));
       }
     } catch (error) {
       console.error('Download error:', error);
-      Alert.alert('Fehler', 'Bild konnte nicht heruntergeladen werden');
+      Alert.alert(t('common.error'), t('gallery.downloadFailed'));
     }
+  };
+
+  const getPlatformUrls = (platform: SocialPlatform, sharePhotos: Photo[]) => {
+    const firstPhoto = sharePhotos[0];
+    if (!firstPhoto) return { appUrls: [] as string[], webUrl: '' };
+
+    const combinedUrls = sharePhotos.map((photo) => photo.url).join(' ');
+    const encodedPhotoUrl = encodeURIComponent(firstPhoto.url);
+    const encodedText = encodeURIComponent(t('gallery.shareMessageSingle'));
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedPhotoUrl}`;
+
+    if (platform === 'instagram') {
+      return {
+        appUrls: ['instagram://app'],
+        webUrl: 'https://www.instagram.com/',
+      };
+    }
+
+    if (platform === 'facebook') {
+      return {
+        appUrls: [`fb://facewebmodal/f?href=${encodeURIComponent(facebookShareUrl)}`, 'fb://'],
+        webUrl: facebookShareUrl,
+      };
+    }
+
+    if (platform === 'x') {
+      return {
+        appUrls: [`twitter://post?message=${encodeURIComponent(`${t('gallery.shareMessageMultiple')} ${combinedUrls}`)}`, 'x://'],
+        webUrl: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodeURIComponent(combinedUrls)}`,
+      };
+    }
+
+    return {
+      appUrls: ['snssdk1233://', 'tiktok://'],
+      webUrl: 'https://www.tiktok.com/',
+    };
+  };
+
+  const handleShareToPlatform = async (platform: SocialPlatform) => {
+    const photoMap = new Map<string, Photo>();
+    [...allPhotos, ...photos, ...purchasedPhotos].forEach((photo) => {
+      photoMap.set(photo.id, photo);
+    });
+
+    const sharePhotos = sharePhotoIds
+      .map((id) => photoMap.get(id))
+      .filter((photo): photo is Photo => !!photo);
+
+    if (sharePhotos.length === 0) {
+      Alert.alert(t('common.info'), t('gallery.selectAtLeastOneImage'));
+      return;
+    }
+
+    try {
+      const { appUrls, webUrl } = getPlatformUrls(platform, sharePhotos);
+
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') {
+          window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+        setShowSocialShareOptions(false);
+        return;
+      }
+
+      let openedApp = false;
+      for (const appUrl of appUrls) {
+        const canOpen = await Linking.canOpenURL(appUrl);
+        if (canOpen) {
+          await Linking.openURL(appUrl);
+          openedApp = true;
+          break;
+        }
+      }
+
+      if (!openedApp) {
+        await Linking.openURL(webUrl);
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      await Share.share({
+        title: 'Liftpictures',
+        message: `${t('gallery.shareMessageMultiple')}\n${sharePhotos.map((photo) => photo.url).join('\n')}`,
+        url: sharePhotos[0].url,
+      });
+    } finally {
+      setShowSocialShareOptions(false);
+      setShareSelectionMode(false);
+      setSelectedSharePhotoIds([]);
+      setSharePhotoIds([]);
+    }
+  };
+
+  const openSocialShareOptions = (photoIds: string[]) => {
+    if (photoIds.length === 0) {
+      Alert.alert(t('common.info'), t('gallery.selectAtLeastOneImage'));
+      return;
+    }
+
+    setSharePhotoIds(photoIds);
+    setShowSocialShareOptions(true);
+  };
+
+  const toggleShareSelection = (photoId: string) => {
+    setSelectedSharePhotoIds((prevIds) => (
+      prevIds.includes(photoId)
+        ? prevIds.filter((id) => id !== photoId)
+        : [...prevIds, photoId]
+    ));
+  };
+
+  const getPurchasedPhotoIds = (items: Photo[]) => (
+    items.filter((photo) => photo.isPurchased).map((photo) => photo.id)
+  );
+
+  const handleTopSharePress = () => {
+    if (!shareSelectionMode) {
+      setShareSelectionMode(true);
+      setSelectedSharePhotoIds([]);
+      return;
+    }
+
+    openSocialShareOptions(selectedSharePhotoIds);
+  };
+
+  const handleRideTopSharePress = () => {
+    const ridePurchasedIds = getPurchasedPhotoIds(photos);
+
+    if (!shareSelectionMode) {
+      setShareSelectionMode(true);
+      setSelectedSharePhotoIds([]);
+      return;
+    }
+
+    const validSelectedIds = selectedSharePhotoIds.filter((id) => ridePurchasedIds.includes(id));
+    openSocialShareOptions(validSelectedIds);
+  };
+
+  const renderSocialSharePicker = () => {
+    if (!showSocialShareOptions) return null;
+
+    const content = (
+      <View style={styles.socialShareOverlay}>
+        <TouchableOpacity
+          style={styles.socialShareBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowSocialShareOptions(false)}
+        />
+        <View style={styles.socialShareCard}>
+          <Text style={styles.socialShareTitle}>Plattform waehlen</Text>
+          <View style={styles.socialShareRow}>
+            {[
+              { key: 'instagram' as SocialPlatform, label: 'Instagram', icon: 'instagram', color: '#E4405F' },
+              { key: 'facebook' as SocialPlatform, label: 'Facebook', icon: 'facebook-f', color: '#1877F2' },
+              { key: 'x' as SocialPlatform, label: 'X', icon: 'x-twitter', color: '#000000' },
+              { key: 'tiktok' as SocialPlatform, label: 'TikTok', icon: 'tiktok', color: '#111111' },
+            ].map((platform) => (
+              <TouchableOpacity
+                key={platform.key}
+                style={styles.socialShareOption}
+                onPress={() => handleShareToPlatform(platform.key)}
+              >
+                <View style={[styles.socialShareIconCircle, { backgroundColor: platform.color }]}>
+                  <FontAwesome6 name={platform.icon as any} size={20} color="#fff" />
+                </View>
+                <Text style={styles.socialShareLabel}>{platform.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+
+    if (Platform.OS === 'web') {
+      return content;
+    }
+
+    return (
+      <Modal
+        visible
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSocialShareOptions(false)}
+      >
+        {content}
+      </Modal>
+    );
+  };
+
+  const renderPurchasedPhotoViewer = () => {
+    if (!selectedPurchasedPhoto) return null;
+
+    const viewerContent = (
+      <SafeAreaView style={styles.photoModalContent}>
+        <TouchableOpacity
+          style={styles.photoModalCloseButton}
+          onPress={() => {
+            setShowSocialShareOptions(false);
+            setSelectedPurchasedPhoto(null);
+          }}
+        >
+          <X size={24} color="#fff" />
+        </TouchableOpacity>
+
+        <Image
+          source={{ uri: selectedPurchasedPhoto.url }}
+          style={styles.photoModalImage}
+          resizeMode="contain"
+        />
+
+        <TouchableOpacity
+          style={styles.photoModalShareButton}
+          onPress={() => openSocialShareOptions([selectedPurchasedPhoto.id])}
+        >
+          <Text style={styles.photoModalShareText}>Teilen auf Social Media</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.photoModalDownloadButton}
+          onPress={() => handleDownload(selectedPurchasedPhoto)}
+        >
+          <Download size={18} color="#000" />
+          <Text style={styles.photoModalDownloadText}>Download</Text>
+        </TouchableOpacity>
+
+      </SafeAreaView>
+    );
+
+    if (Platform.OS === 'web') {
+      return (
+        <View style={styles.photoWebOverlay}>
+          {viewerContent}
+        </View>
+      );
+    }
+
+    return (
+      <Modal
+        visible
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSocialShareOptions(false);
+          setSelectedPurchasedPhoto(null);
+        }}
+      >
+        <View style={styles.photoModalOverlay}>
+          {viewerContent}
+        </View>
+      </Modal>
+    );
   };
 
   if (loading) {
@@ -304,11 +767,41 @@ export default function GalleryScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => setShowPurchasedImages(false)}
+            onPress={() => {
+              setShareSelectionMode(false);
+              setSelectedSharePhotoIds([]);
+              setShowPurchasedImages(false);
+            }}
           >
             <Text style={styles.backButtonText}>← Zurück</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Meine gekauften Bilder</Text>
+        </View>
+        <View style={styles.multiShareContainer}>
+          <TouchableOpacity
+            style={[styles.multiShareButton, shareSelectionMode && styles.multiShareButtonActive]}
+            onPress={handleTopSharePress}
+          >
+            <Share2 size={16} color="#000" />
+            <Text style={styles.multiShareButtonText}>
+              {shareSelectionMode
+                ? (selectedSharePhotoIds.length > 0
+                  ? `Teilen (${selectedSharePhotoIds.length})`
+                  : 'Bilder waehlen')
+                : 'Teilen auf Social Media'}
+            </Text>
+          </TouchableOpacity>
+          {shareSelectionMode && (
+            <TouchableOpacity
+              style={styles.multiShareCancelButton}
+              onPress={() => {
+                setShareSelectionMode(false);
+                setSelectedSharePhotoIds([]);
+              }}
+            >
+              <Text style={styles.multiShareCancelText}>Abbrechen</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {loadingPurchased ? (
@@ -333,30 +826,80 @@ export default function GalleryScreen() {
         ) : (
           <ScrollView style={styles.gallery} showsVerticalScrollIndicator={false}>
             <View style={styles.gridContainer}>
-              {purchasedPhotos.map((photo) => (
-                <View key={photo.id} style={styles.gridItem}>
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{ uri: photo.url }}
-                      style={styles.gridImage}
-                      resizeMode="cover"
-                    />
+	              {purchasedPhotos.map((photo) => (
+	                <View
+	                  key={photo.id}
+	                  style={[
+	                    styles.gridItem,
+	                    shareSelectionMode && selectedSharePhotoIds.includes(photo.id) && styles.selectedShareCard,
+	                  ]}
+	                >
+	                  <TouchableOpacity
+	                    style={styles.imageContainer}
+	                    activeOpacity={0.9}
+	                    onPress={() => {
+	                      if (shareSelectionMode) {
+                        toggleShareSelection(photo.id);
+                      } else {
+                        setSelectedPurchasedPhoto(photo);
+                      }
+                    }}
+	                  >
+	                    <Image
+	                      source={{ uri: photo.url }}
+	                      style={styles.gridImage}
+	                      resizeMode="cover"
+	                    />
+	                    {shareSelectionMode && selectedSharePhotoIds.includes(photo.id) && (
+	                      <View style={styles.shareSelectedBadge}>
+	                        <Check size={14} color="#fff" />
+	                      </View>
+	                    )}
+	                  </TouchableOpacity>
+	                  <TouchableOpacity
+	                    style={[styles.favoriteButton, photo.isFavorite && styles.favoriteActive]}
+	                    onPress={() => toggleFavorite(photo.id)}
+	                  >
+	                    <Heart size={16} color={photo.isFavorite ? '#fff' : '#ff6b35'} />
+	                  </TouchableOpacity>
+	                  <TouchableOpacity
+	                    style={styles.purchasedGridInfo}
+	                    activeOpacity={0.85}
+	                    onPress={() => {
+	                      if (shareSelectionMode) {
+	                        toggleShareSelection(photo.id);
+	                      } else {
+	                        setSelectedPurchasedPhoto(photo);
+	                      }
+	                    }}
+	                  >
+	                    <View>
+	                      <Text style={styles.gridTime}>{photo.timestamp}</Text>
+	                      <Text style={styles.gridSpeed}>{photo.speed.toFixed(1)} km/h</Text>
+	                    </View>
+	                    <TouchableOpacity
+	                      style={styles.purchasedInfoShareButton}
+	                      onPress={() => openSocialShareOptions([photo.id])}
+	                    >
+	                      <Share2 size={13} color="#fff" />
+		                    </TouchableOpacity>
+		                  </TouchableOpacity>
+                  <View style={styles.gridActions}>
+                    <TouchableOpacity
+                      style={styles.downloadButtonSmall}
+                      onPress={() => handleDownload(photo)}
+                    >
+                      <Download size={14} color="#000" />
+                      <Text style={styles.downloadButtonText}>Download</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.downloadButton}
-                    onPress={() => handleDownload(photo)}
-                  >
-                    <Download size={16} color="#000" />
-                  </TouchableOpacity>
-                  <View style={styles.gridInfo}>
-                    <Text style={styles.gridTime}>{photo.timestamp}</Text>
-                    <Text style={styles.gridSpeed}>{photo.speed.toFixed(1)} km/h</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+		                </View>
+		              ))}
+	            </View>
           </ScrollView>
         )}
+        {renderPurchasedPhotoViewer()}
+        {renderSocialSharePicker()}
       </SafeAreaView>
     );
   }
@@ -399,7 +942,15 @@ export default function GalleryScreen() {
             <View style={styles.gridContainer}>
               {favoritePhotos.map((photo) => (
                 <View key={photo.id} style={styles.gridItem}>
-                  <View style={styles.imageContainer}>
+                  <TouchableOpacity
+                    style={styles.imageContainer}
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      if (photo.isPurchased) {
+                        setSelectedPurchasedPhoto(photo);
+                      }
+                    }}
+                  >
                     <Image source={{ uri: photo.url }} style={styles.gridImage} />
                     {!photo.isPurchased && (
                       <View style={styles.watermarkOverlay}>
@@ -407,17 +958,36 @@ export default function GalleryScreen() {
                         <Text style={styles.watermarkSubtext}>VORSCHAU</Text>
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.favoriteButton, styles.favoriteActive]}
                     onPress={() => toggleFavorite(photo.id)}
                   >
                     <Heart size={16} color="#fff" />
                   </TouchableOpacity>
-                  <View style={styles.gridInfo}>
-                    <Text style={styles.gridTime}>{photo.timestamp}</Text>
-                    <Text style={styles.gridSpeed}>{photo.speed} km/h</Text>
-                  </View>
+                  {photo.isPurchased ? (
+                    <TouchableOpacity
+                      style={styles.purchasedGridInfo}
+                      activeOpacity={0.85}
+                      onPress={() => setSelectedPurchasedPhoto(photo)}
+                    >
+                      <View>
+                        <Text style={styles.gridTime}>{photo.timestamp}</Text>
+                        <Text style={styles.gridSpeed}>{photo.speed} km/h</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.purchasedInfoShareButton}
+                        onPress={() => openSocialShareOptions([photo.id])}
+                      >
+                        <Share2 size={13} color="#fff" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.gridInfo}>
+                      <Text style={styles.gridTime}>{photo.timestamp}</Text>
+                      <Text style={styles.gridSpeed}>{photo.speed} km/h</Text>
+                    </View>
+                  )}
                   {photo.isPurchased ? (
                     <View style={styles.gridActions}>
                       <TouchableOpacity
@@ -430,17 +1000,22 @@ export default function GalleryScreen() {
                     </View>
                   ) : (
                     <View style={styles.gridActions}>
-                      <TouchableOpacity
-                        style={styles.addToCartButton}
-                        onPress={() => handleAddToCart(photo)}
-                      >
-                        <Plus size={14} color="#000" />
-                      </TouchableOpacity>
+                      {cartPhotoIds.has(photo.id) ? (
+                        <View style={styles.addedToCartBadge}>
+                          <Text style={styles.addedToCartText}>Hinzugefügt</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.addToCartButton}
+                          onPress={() => handleAddToCart(photo)}
+                        >
+                          <Plus size={14} color="#000" />
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         style={styles.gridBuyButton}
                         onPress={() => {
-                          handleAddToCart(photo);
-                          router.push('/cart');
+                          handleAddToCart(photo, true);
                         }}
                       >
                         <ShoppingCart size={14} color="#000" />
@@ -452,6 +1027,8 @@ export default function GalleryScreen() {
             </View>
           </ScrollView>
         )}
+        {renderPurchasedPhotoViewer()}
+        {renderSocialSharePicker()}
       </SafeAreaView>
     );
   }
@@ -497,6 +1074,8 @@ export default function GalleryScreen() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
+              setShareSelectionMode(false);
+              setSelectedSharePhotoIds([]);
               setSelectedRide(null);
               setShowPurchasedImages(true);
             }}
@@ -579,7 +1158,11 @@ export default function GalleryScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setSelectedRide(null)}
+          onPress={() => {
+            setShareSelectionMode(false);
+            setSelectedSharePhotoIds([]);
+            setSelectedRide(null);
+          }}
         >
           <Text style={styles.backButtonText}>← Zurück</Text>
         </TouchableOpacity>
@@ -596,11 +1179,41 @@ export default function GalleryScreen() {
       <View style={styles.purchasedButtonContainer}>
         <TouchableOpacity
           style={styles.purchasedButton}
-          onPress={() => setShowPurchasedImages(true)}
+          onPress={() => {
+            setShareSelectionMode(false);
+            setSelectedSharePhotoIds([]);
+            setShowPurchasedImages(true);
+          }}
         >
           <Package size={20} color="#ff6b35" />
           <Text style={styles.purchasedButtonText}>Meine gekauften Bilder</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.multiShareContainer}>
+        <TouchableOpacity
+          style={[styles.multiShareButton, shareSelectionMode && styles.multiShareButtonActive]}
+          onPress={handleRideTopSharePress}
+        >
+          <Share2 size={16} color="#000" />
+          <Text style={styles.multiShareButtonText}>
+            {shareSelectionMode
+              ? (selectedSharePhotoIds.length > 0
+                ? `Teilen (${selectedSharePhotoIds.length})`
+                : 'Bilder waehlen')
+              : 'Teilen auf Social Media'}
+          </Text>
+        </TouchableOpacity>
+        {shareSelectionMode && (
+          <TouchableOpacity
+            style={styles.multiShareCancelButton}
+            onPress={() => {
+              setShareSelectionMode(false);
+              setSelectedSharePhotoIds([]);
+            }}
+          >
+            <Text style={styles.multiShareCancelText}>Abbrechen</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -626,8 +1239,25 @@ export default function GalleryScreen() {
         <ScrollView style={styles.gallery} showsVerticalScrollIndicator={false}>
           <View style={styles.gridContainer}>
             {photos.map((photo) => (
-              <View key={photo.id} style={styles.gridItem}>
-                <View style={styles.imageContainer}>
+              <View
+                key={photo.id}
+                style={[
+                  styles.gridItem,
+                  photo.isPurchased && shareSelectionMode && selectedSharePhotoIds.includes(photo.id) && styles.selectedShareCard,
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.imageContainer}
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    if (!photo.isPurchased) return;
+                    if (shareSelectionMode) {
+                      toggleShareSelection(photo.id);
+                    } else {
+                      setSelectedPurchasedPhoto(photo);
+                    }
+                  }}
+                >
                   <Image source={{ uri: photo.url }} style={styles.gridImage} />
                   {!photo.isPurchased && (
                     <View style={styles.watermarkOverlay}>
@@ -635,17 +1265,47 @@ export default function GalleryScreen() {
                       <Text style={styles.watermarkSubtext}>VORSCHAU</Text>
                     </View>
                   )}
-                </View>
+                  {photo.isPurchased && shareSelectionMode && selectedSharePhotoIds.includes(photo.id) && (
+                    <View style={styles.shareSelectedBadge}>
+                      <Check size={14} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.favoriteButton, photo.isFavorite && styles.favoriteActive]}
                   onPress={() => toggleFavorite(photo.id)}
                 >
                   <Heart size={16} color={photo.isFavorite ? '#fff' : '#ff6b35'} />
                 </TouchableOpacity>
-                <View style={styles.gridInfo}>
-                  <Text style={styles.gridTime}>{photo.timestamp}</Text>
-                  <Text style={styles.gridSpeed}>{photo.speed.toFixed(1)} km/h</Text>
-                </View>
+                {photo.isPurchased ? (
+                  <TouchableOpacity
+                    style={styles.purchasedGridInfo}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      if (shareSelectionMode) {
+                        toggleShareSelection(photo.id);
+                      } else {
+                        setSelectedPurchasedPhoto(photo);
+                      }
+                    }}
+                  >
+                    <View>
+                      <Text style={styles.gridTime}>{photo.timestamp}</Text>
+                      <Text style={styles.gridSpeed}>{photo.speed.toFixed(1)} km/h</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.purchasedInfoShareButton}
+                      onPress={() => openSocialShareOptions([photo.id])}
+                    >
+                      <Share2 size={13} color="#fff" />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.gridInfo}>
+                    <Text style={styles.gridTime}>{photo.timestamp}</Text>
+                    <Text style={styles.gridSpeed}>{photo.speed.toFixed(1)} km/h</Text>
+                  </View>
+                )}
                 {photo.isPurchased ? (
                   <View style={styles.gridActions}>
                     <TouchableOpacity
@@ -658,17 +1318,22 @@ export default function GalleryScreen() {
                   </View>
                 ) : (
                   <View style={styles.gridActions}>
-                    <TouchableOpacity
-                      style={styles.addToCartButton}
-                      onPress={() => handleAddToCart(photo)}
-                    >
-                      <Plus size={14} color="#000" />
-                    </TouchableOpacity>
+                    {cartPhotoIds.has(photo.id) ? (
+                      <View style={styles.addedToCartBadge}>
+                        <Text style={styles.addedToCartText}>Hinzugefügt</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addToCartButton}
+                        onPress={() => handleAddToCart(photo)}
+                      >
+                        <Plus size={14} color="#000" />
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={styles.gridBuyButton}
                       onPress={() => {
-                        handleAddToCart(photo);
-                        router.push('/cart');
+                        handleAddToCart(photo, true);
                       }}
                     >
                       <ShoppingCart size={14} color="#000" />
@@ -680,6 +1345,8 @@ export default function GalleryScreen() {
           </View>
         </ScrollView>
       )}
+      {renderPurchasedPhotoViewer()}
+      {renderSocialSharePicker()}
     </SafeAreaView>
   );
 }
@@ -688,6 +1355,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
@@ -855,6 +1523,43 @@ const styles = StyleSheet.create({
     color: '#ff6b35',
     marginLeft: 8,
   },
+  multiShareContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  multiShareButton: {
+    backgroundColor: '#ff6b35',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  multiShareButtonActive: {
+    backgroundColor: '#00c851',
+  },
+  multiShareButtonText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  multiShareCancelButton: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#444',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  multiShareCancelText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   gallery: {
     flex: 1,
     paddingHorizontal: 20,
@@ -881,6 +1586,37 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     height: 120,
+  },
+  selectedShareCard: {
+    borderWidth: 2,
+    borderColor: '#00c851',
+  },
+  shareSelectedBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#00c851',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9,
+  },
+  purchasedGridInfo: {
+    padding: 12,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  purchasedInfoShareButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   watermarkOverlay: {
     position: 'absolute',
@@ -925,6 +1661,9 @@ const styles = StyleSheet.create({
   favoriteActive: {
     backgroundColor: '#ff6b35',
   },
+  purchasedFavoriteButton: {
+    right: 48,
+  },
   gridInfo: {
     padding: 12,
     paddingBottom: 8,
@@ -952,6 +1691,19 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  addedToCartBadge: {
+    backgroundColor: '#00c851',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addedToCartText: {
+    color: '#000',
+    fontSize: 11,
+    fontWeight: '700',
   },
   gridBuyButton: {
     backgroundColor: '#ff6b35',
@@ -987,5 +1739,132 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     marginLeft: 4,
+  },
+  photoModalOverlay: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoWebOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#000',
+    zIndex: 1000,
+  },
+  photoModalContent: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#000',
+  },
+  photoModalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  photoModalShareButton: {
+    position: 'absolute',
+    top: 24,
+    alignSelf: 'center',
+    backgroundColor: '#ff6b35',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    zIndex: 9,
+  },
+  photoModalShareText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  photoModalImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+  },
+  photoModalDownloadButton: {
+    position: 'absolute',
+    bottom: 34,
+    alignSelf: 'center',
+    backgroundColor: '#00c851',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 9,
+  },
+  photoModalDownloadText: {
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  socialShareOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 20,
+    justifyContent: 'flex-end',
+  },
+  socialShareBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  socialShareCard: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 26,
+    borderTopWidth: 1,
+    borderColor: '#333',
+  },
+  socialShareTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  socialShareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  socialShareOption: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  socialShareIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  socialShareLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
