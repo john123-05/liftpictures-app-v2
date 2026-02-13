@@ -11,47 +11,25 @@ interface AccessContextType {
 const AccessContext = createContext<AccessContextType | undefined>(undefined);
 
 export const AccessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [hasAccess, setHasAccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const checkExistingAccess = async () => {
-      try {
-        const granted = await AsyncStorage.getItem('site_access_granted');
-        if (granted === 'true') {
-          setHasAccess(true);
-        }
-      } catch (error) {
-        console.error('Error checking access:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkExistingAccess();
+    // Access gate disabled: app is always directly accessible.
+    setHasAccess(true);
+    setIsLoading(false);
   }, []);
 
   const checkPassword = async (password: string): Promise<boolean> => {
-    const correctPassword = 'liftpictures-demo123';
-    const isCorrect = password === correctPassword;
-
-    if (isCorrect) {
-      try {
-        await AsyncStorage.setItem('site_access_granted', 'true');
-        setHasAccess(true);
-      } catch (error) {
-        console.error('Error saving access:', error);
-        return false;
-      }
-    }
-
-    return isCorrect;
+    void password;
+    setHasAccess(true);
+    return true;
   };
 
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('site_access_granted');
-      setHasAccess(false);
+      setHasAccess(true);
     } catch (error) {
       console.error('Error logging out:', error);
     }
