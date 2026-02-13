@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, Platform, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated, Easing, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -14,7 +14,9 @@ import '@/lib/i18n';
 
 function LayoutContent() {
   const { hasAccess, isLoading } = useAccess();
+  const { width } = useWindowDimensions();
   const neonPulse = useRef(new Animated.Value(0)).current;
+  const isDesktopWeb = Platform.OS === 'web' && width >= 1100;
 
   useEffect(() => {
     const pulseAnimation = Animated.loop(
@@ -79,7 +81,7 @@ function LayoutContent() {
     </LanguageProvider>
   );
 
-  if (Platform.OS === 'web') {
+  if (isDesktopWeb) {
     return (
       <View style={styles.desktopContainer}>
         <LinearGradient
