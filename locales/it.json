@@ -344,8 +344,12 @@
     "termsPrefix": "Effettuando l'accesso accetti i ns",
     "andThe": "e il",
     "termsSuffix": ".",
+    "park": "Parco",
+    "loadingParks": "Caricamento parchi...",
+    "selectPark": "Seleziona parco",
     "errors": {
       "fillAllFields": "Si prega di compilare tutti i campi.",
+      "selectParkRequired": "Seleziona un parco.",
       "passwordTooShort": "La password deve contenere almeno 6 caratteri.",
       "authFailed": "Autenticazione non riuscita",
       "invalidCredentials": "E-mail o password non valide",

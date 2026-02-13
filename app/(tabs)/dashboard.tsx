@@ -182,6 +182,7 @@ export default function DashboardScreen() {
           photos!inner(captured_at, storage_path)
         `)
         .in('ride_date', dateFilter)
+        .eq('park_id', user.park_id || '11111111-1111-1111-1111-111111111111')
         .order('speed_kmh', { ascending: false })
         .limit(500);
 
@@ -266,7 +267,8 @@ export default function DashboardScreen() {
             .select(`
               photos!inner(speed_kmh, storage_path, captured_at)
             `)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('park_id', user.park_id || '11111111-1111-1111-1111-111111111111');
 
           if (myTodayPhotosError) {
             console.error('Error fetching fallback user ranking:', myTodayPhotosError);

@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mail, Lock, User, ArrowLeft, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, User, ArrowLeft, AlertCircle, ChevronDown, Check } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/lib/supabase';
+
+type Park = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,9 +24,48 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [parks, setParks] = useState<Park[]>([]);
+  const [selectedParkId, setSelectedParkId] = useState<string>('');
+  const [loadingParks, setLoadingParks] = useState(false);
+  const [showParkModal, setShowParkModal] = useState(false);
   const { t } = useTranslation();
 
-  const { signIn, signUp } = useAuthContext();
+  const { signIn, signUp, user, loading: authLoading } = useAuthContext();
+
+  useEffect(() => {
+    const loadParks = async () => {
+      setLoadingParks(true);
+      try {
+        const { data, error } = await supabase
+          .from('parks')
+          .select('id, name, slug')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        const loadedParks = (data || []) as Park[];
+        setParks(loadedParks);
+        if (loadedParks.length > 0 && !selectedParkId) {
+          const adventure = loadedParks.find((park) => park.slug === 'adventure-land');
+          setSelectedParkId((adventure || loadedParks[0]).id);
+        }
+      } catch (err) {
+        console.error('Error loading parks:', err);
+      } finally {
+        setLoadingParks(false);
+      }
+    };
+
+    loadParks();
+  }, []);
+
+  useEffect(() => {
+    // Navigate only after auth context confirms a logged-in user.
+    if (!isSignUp && !authLoading && user) {
+      router.replace('/(tabs)');
+    }
+  }, [isSignUp, authLoading, user]);
 
   const handleAuth = async () => {
     setError('');
@@ -27,6 +73,11 @@ export default function AuthScreen() {
 
     if (!email || !password || (isSignUp && (!firstName || !lastName))) {
       setError(t('auth.errors.fillAllFields'));
+      return;
+    }
+
+    if (isSignUp && !selectedParkId) {
+      setError(t('auth.errors.selectParkRequired'));
       return;
     }
 
@@ -42,7 +93,7 @@ export default function AuthScreen() {
 
       if (isSignUp) {
         console.log('Attempting sign up with:', { email, firstName, lastName });
-        result = await signUp(email, password, firstName, lastName);
+        result = await signUp(email, password, firstName, lastName, selectedParkId);
 
         if (!result.error) {
           setSuccessMessage(t('auth.signupSuccess'));
@@ -50,18 +101,15 @@ export default function AuthScreen() {
           setPassword('');
           setFirstName('');
           setLastName('');
+          if (parks.length > 0) {
+            const adventure = parks.find((park) => park.slug === 'adventure-land');
+            setSelectedParkId((adventure || parks[0]).id);
+          }
           setTimeout(() => setIsSignUp(false), 3000);
         }
       } else {
         console.log('Attempting sign in with:', { email });
         result = await signIn(email, password);
-
-        if (!result.error) {
-          console.log('Auth successful, redirecting...');
-          setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 100);
-        }
       }
 
       console.log('Auth result:', result);
@@ -165,6 +213,29 @@ export default function AuthScreen() {
                       autoCapitalize="words"
                     />
                   </View>
+
+                  <TouchableOpacity
+                    style={styles.inputGroup}
+                    onPress={() => setShowParkModal(true)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.inputIcon}>
+                      <User size={20} color="#999" />
+                    </View>
+                    <View style={styles.parkPickerContent}>
+                      <Text style={styles.parkPickerLabel}>{t('auth.park')}</Text>
+                      <Text style={styles.parkPickerValue}>
+                        {loadingParks
+                          ? t('auth.loadingParks')
+                          : parks.find((park) => park.id === selectedParkId)?.name || t('auth.selectPark')}
+                      </Text>
+                    </View>
+                    {loadingParks ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <ChevronDown size={18} color="#999" />
+                    )}
+                  </TouchableOpacity>
                 </>
               )}
 
@@ -245,6 +316,30 @@ export default function AuthScreen() {
         </View>
       </LinearGradient>
       </SafeAreaView>
+
+      <Modal visible={showParkModal} transparent animationType="slide" onRequestClose={() => setShowParkModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('auth.selectPark')}</Text>
+            {parks.map((park) => (
+              <TouchableOpacity
+                key={park.id}
+                style={styles.parkOption}
+                onPress={() => {
+                  setSelectedParkId(park.id);
+                  setShowParkModal(false);
+                }}
+              >
+                <Text style={styles.parkOptionText}>{park.name}</Text>
+                {selectedParkId === park.id ? <Check size={18} color="#ff6b35" /> : null}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeModalButton} onPress={() => setShowParkModal(false)}>
+              <Text style={styles.closeModalButtonText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -324,6 +419,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     paddingVertical: 16,
+  },
+  parkPickerContent: {
+    flex: 1,
+    paddingVertical: 10,
+  },
+  parkPickerLabel: {
+    color: '#777',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  parkPickerValue: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
   },
   authButton: {
     backgroundColor: '#ff6b35',
@@ -413,5 +522,48 @@ const styles = StyleSheet.create({
     color: '#00c851',
     marginLeft: 8,
     flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    borderTopWidth: 1,
+    borderColor: '#333',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  parkOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2d2d2d',
+  },
+  parkOptionText: {
+    color: '#fff',
+    fontSize: 15,
+  },
+  closeModalButton: {
+    marginTop: 14,
+    backgroundColor: '#2b2b2b',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  closeModalButtonText: {
+    color: '#ddd',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

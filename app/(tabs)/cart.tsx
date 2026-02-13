@@ -47,7 +47,7 @@ export default function CartScreen() {
         },
         body: JSON.stringify({
           items: items,
-          successUrl: `${window.location.origin}/success`,
+          successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${window.location.origin}/cart`,
         }),
       });

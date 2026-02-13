@@ -140,7 +140,8 @@ export default function GalleryScreen() {
       const { data, error } = await supabase
         .from('favorites')
         .select('photo_id')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('park_id', user.park_id || '11111111-1111-1111-1111-111111111111');
 
       if (error) throw error;
 
@@ -155,17 +156,20 @@ export default function GalleryScreen() {
 
     setLoadingPurchased(true);
     try {
+      const parkId = user.park_id || '11111111-1111-1111-1111-111111111111';
       const { data, error } = await supabase
         .from('unlocked_photos')
         .select(`
           photo_id,
+          park_id,
           unlocked_at,
           photos (
             id,
             storage_bucket,
             storage_path,
             captured_at,
-            speed_kmh
+            speed_kmh,
+            park_id
           )
         `)
         .eq('user_id', user.id)
@@ -175,11 +179,25 @@ export default function GalleryScreen() {
 
       if (data && data.length > 0) {
         const favoriteSet = new Set(favoritePhotoIds);
+        const parkScopedRows = data.filter((item: any) => {
+          const joinedPhoto = Array.isArray(item.photos) ? item.photos[0] : item.photos;
+          if (!joinedPhoto) return false;
+
+          const unlockedParkId = item.park_id ?? null;
+          const photoParkId = joinedPhoto.park_id ?? null;
+
+          // Keep data visible for current park and tolerate legacy rows where park_id is missing.
+          if (!unlockedParkId && !photoParkId) return true;
+          if (unlockedParkId === parkId || photoParkId === parkId) return true;
+          return false;
+        });
+
         const formattedPhotos: Photo[] = await Promise.all(
-          data
+          parkScopedRows
             .filter((item: any) => item.photos)
             .map(async (item: any) => {
-              const photo = item.photos;
+              const photo = Array.isArray(item.photos) ? item.photos[0] : item.photos;
+              if (!photo) return null;
               const capturedTime = new Date(photo.captured_at);
 
               const { data: signedUrlData, error: urlError } = await supabase.storage
@@ -210,12 +228,14 @@ export default function GalleryScreen() {
             })
         );
 
+        const normalizedPhotos = formattedPhotos.filter((photo): photo is Photo => !!photo);
+
         setPurchasedPhotos((prevPurchasedPhotos) => {
           const existingFavorites = new Map(
             prevPurchasedPhotos.map((photo) => [photo.id, photo.isFavorite])
           );
 
-          return formattedPhotos.map((photo) => ({
+          return normalizedPhotos.map((photo) => ({
             ...photo,
             isFavorite: existingFavorites.get(photo.id) ?? photo.isFavorite,
           }));
@@ -224,9 +244,9 @@ export default function GalleryScreen() {
           const existingFavorites = new Map(
             prevAllPhotos.map((photo) => [photo.id, photo.isFavorite])
           );
-          const loadedPhotoIds = new Set(formattedPhotos.map((photo) => photo.id));
+          const loadedPhotoIds = new Set(normalizedPhotos.map((photo) => photo.id));
 
-          const mergedLoadedPhotos = formattedPhotos.map((photo) => ({
+          const mergedLoadedPhotos = normalizedPhotos.map((photo) => ({
             ...photo,
             isFavorite: existingFavorites.get(photo.id) ?? photo.isFavorite,
           }));
@@ -268,15 +288,29 @@ export default function GalleryScreen() {
 
     setLoading(true);
     try {
+      const parkId = user.park_id || '11111111-1111-1111-1111-111111111111';
+
       const { data, error } = await supabase
         .from('rides')
         .select('*')
         .eq('user_id', user.id)
+        .eq('park_id', parkId)
         .order('ride_at', { ascending: false });
 
       if (error) throw error;
+      if (data && data.length > 0) {
+        setRides(data);
+      } else {
+        // Fallback for legacy rows before park_id backfill/migration is applied.
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('ride_at', { ascending: false });
 
-      setRides(data || []);
+        if (legacyError) throw legacyError;
+        setRides(legacyData || []);
+      }
     } catch (error: any) {
       console.error('Error fetching rides:', error);
     } finally {
@@ -285,12 +319,15 @@ export default function GalleryScreen() {
   };
 
   const handleRideSelect = async (ride: Ride) => {
+    if (!user) return;
+
     setShareSelectionMode(false);
     setSelectedSharePhotoIds([]);
     setSelectedRide(ride);
     setLoading(true);
 
     try {
+      const parkId = user.park_id || '11111111-1111-1111-1111-111111111111';
       const rideTime = new Date(ride.ride_at);
       const fromTime = new Date(rideTime.getTime() - 7 * 60 * 1000);
       const toTime = new Date(rideTime.getTime() + 7 * 60 * 1000);
@@ -302,16 +339,36 @@ export default function GalleryScreen() {
           purchases!left(status),
           unlocked_photos!left(user_id)
         `)
+        .eq('park_id', parkId)
         .gte('captured_at', fromTime.toISOString())
         .lte('captured_at', toTime.toISOString())
         .order('captured_at', { ascending: true });
 
       if (error) throw error;
 
-      if (!data || data.length === 0) {
+      let resolvedData = data || [];
+
+      if (resolvedData.length === 0) {
+        // Fallback for legacy photos without park_id backfill.
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('photos')
+          .select(`
+            *,
+            purchases!left(status),
+            unlocked_photos!left(user_id)
+          `)
+          .gte('captured_at', fromTime.toISOString())
+          .lte('captured_at', toTime.toISOString())
+          .order('captured_at', { ascending: true });
+
+        if (legacyError) throw legacyError;
+        resolvedData = legacyData || [];
+      }
+
+      if (resolvedData.length === 0) {
         setPhotos([]);
       } else {
-        const formattedPhotos: Photo[] = data.map((dbPhoto: any) => {
+        const formattedPhotos: Photo[] = resolvedData.map((dbPhoto: any) => {
           const capturedTime = new Date(dbPhoto.captured_at);
           const { data: urlData } = supabase.storage
             .from(dbPhoto.storage_bucket)
@@ -389,6 +446,7 @@ export default function GalleryScreen() {
           .insert({
             user_id: user.id,
             photo_id: id,
+            park_id: user.park_id || '11111111-1111-1111-1111-111111111111',
           } as any);
 
         if (error && !error.message?.includes('duplicate key')) {
@@ -399,7 +457,8 @@ export default function GalleryScreen() {
           .from('favorites')
           .delete()
           .eq('user_id', user.id)
-          .eq('photo_id', id);
+          .eq('photo_id', id)
+          .eq('park_id', user.park_id || '11111111-1111-1111-1111-111111111111');
 
         if (error) throw error;
       }

@@ -344,8 +344,12 @@
     "termsPrefix": "Door u aan te melden, gaat u akkoord met onze",
     "andThe": "en de",
     "termsSuffix": ".",
+    "park": "Park",
+    "loadingParks": "Parken laden...",
+    "selectPark": "Park selecteren",
     "errors": {
       "fillAllFields": "Vul alle velden in.",
+      "selectParkRequired": "Selecteer een park.",
       "passwordTooShort": "Wachtwoord moet minimaal 6 tekens lang zijn.",
       "authFailed": "Authenticatie mislukt",
       "invalidCredentials": "Ongeldig e-mailadres of wachtwoord",

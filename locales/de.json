@@ -344,8 +344,12 @@
     "termsPrefix": "Mit der Anmeldung stimmst du unseren",
     "andThe": "und der",
     "termsSuffix": "zu.",
+    "park": "Park",
+    "loadingParks": "Parks werden geladen...",
+    "selectPark": "Park auswählen",
     "errors": {
       "fillAllFields": "Bitte fülle alle Felder aus.",
+      "selectParkRequired": "Bitte wähle einen Park aus.",
       "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein.",
       "authFailed": "Authentifizierung fehlgeschlagen",
       "invalidCredentials": "Ungültige E-Mail oder Passwort",

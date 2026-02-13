@@ -232,12 +232,17 @@ export default function HomeScreen() {
       selectedDate: today,
     };
 
-    addToCart(fotopass);
+    const result = addToCart(fotopass);
     setShowFotopassModal(false);
+
+    const removedCount = result.removedPhotoCount || 0;
+    const message = removedCount > 0
+      ? `${t('home.photoPassAddedDescription')}\n\n${removedCount} ${removedCount === 1 ? 'Bild' : 'Bilder'} wurden aus dem Warenkorb entfernt.`
+      : t('home.photoPassAddedDescription');
 
     Alert.alert(
       t('home.addedToCart'),
-      t('home.photoPassAddedDescription'),
+      message,
       [
         { text: t('home.continueShopping'), style: 'cancel' },
         { text: t('home.toCart'), onPress: () => router.push('/(tabs)/cart') },

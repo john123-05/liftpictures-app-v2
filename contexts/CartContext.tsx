@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CartItem, CartState, Product } from '@/types/cart';
+import { CartItem, CartState } from '@/types/cart';
 
 interface CartContextType extends CartState {
-  addToCart: (item: any) => { added: boolean; reason?: 'already_in_cart' };
+  addToCart: (item: any) => { added: boolean; reason?: 'already_in_cart'; removedPhotoCount?: number };
   removeFromCart: (photoId: string) => void;
   updateQuantity: (photoId: string, quantity: number) => void;
   clearCart: () => void;
@@ -31,14 +31,17 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const item = action.payload;
       const itemId = item.id || item.photoId;
       const itemType = item.type || 'photo';
-      const existingItem = state.items.find(cartItem => cartItem.photoId === itemId);
+      const baseItems = itemType === 'pass'
+        ? state.items.filter((cartItem) => cartItem.type !== 'photo')
+        : state.items;
+      const existingItem = baseItems.find(cartItem => cartItem.photoId === itemId);
       
       if (existingItem) {
         if (existingItem.type === 'photo' || itemType === 'photo') {
-          return state;
+          return computeTotals(baseItems);
         }
 
-        const updatedItems = state.items.map(cartItem =>
+        const updatedItems = baseItems.map(cartItem =>
           cartItem.photoId === itemId
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
@@ -60,7 +63,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         ticketType: item.ticketType,
       };
       
-      const updatedItems = [...state.items, newItem];
+      const updatedItems = [...baseItems, newItem];
       return computeTotals(updatedItems);
     }
     
@@ -106,15 +109,18 @@ const initialState: CartState = {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const hydratedRef = useRef(false);
+  const clearRequestedRef = useRef(false);
 
   useEffect(() => {
     const loadCart = async () => {
       try {
         const storedCart = await AsyncStorage.getItem(CART_STORAGE_KEY);
         if (!storedCart) return;
+        if (clearRequestedRef.current) return;
 
         const parsed = JSON.parse(storedCart) as Partial<CartState>;
         const items = Array.isArray(parsed.items) ? parsed.items : [];
+        if (clearRequestedRef.current) return;
         dispatch({
           type: 'HYDRATE_CART',
           payload: { items, total: 0, itemCount: 0 },
@@ -140,6 +146,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (item: any) => {
     const itemId = item.id || item.photoId;
     const itemType = item.type || 'photo';
+    const removedPhotoCount = itemType === 'pass'
+      ? state.items.filter((cartItem) => cartItem.type === 'photo').length
+      : 0;
     const existingItem = state.items.find(cartItem => cartItem.photoId === itemId);
 
     if (existingItem && (existingItem.type === 'photo' || itemType === 'photo')) {
@@ -147,7 +156,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     dispatch({ type: 'ADD_TO_CART', payload: item });
-    return { added: true };
+    return { added: true, removedPhotoCount };
   };
 
   const removeFromCart = (photoId: string) => {
@@ -159,7 +168,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = () => {
+    clearRequestedRef.current = true;
     dispatch({ type: 'CLEAR_CART' });
+    AsyncStorage.removeItem(CART_STORAGE_KEY).catch((error) => {
+      console.error('Failed to clear cart from storage:', error);
+    });
   };
 
   return (

@@ -344,8 +344,12 @@
     "termsPrefix": "Al iniciar sesión, aceptas nuestros",
     "andThe": "y la",
     "termsSuffix": ".",
+    "park": "Parque",
+    "loadingParks": "Cargando parques...",
+    "selectPark": "Seleccionar parque",
     "errors": {
       "fillAllFields": "Por favor completa todos los campos.",
+      "selectParkRequired": "Por favor selecciona un parque.",
       "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
       "authFailed": "Autenticación fallida",
       "invalidCredentials": "Correo o contraseña inválidos",

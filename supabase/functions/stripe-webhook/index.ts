@@ -27,6 +27,7 @@ type PhotoForLeaderboard = {
   speed_kmh: number | null;
   captured_at: string;
   storage_path: string;
+  park_id: string | null;
 };
 
 Deno.serve(async (req) => {
@@ -157,6 +158,12 @@ async function handleEvent(event: Stripe.Event) {
         }
 
         const userId = customerData.user_id;
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('park_id')
+          .eq('id', userId)
+          .maybeSingle();
+        const userParkId = userProfile?.park_id ?? '11111111-1111-1111-1111-111111111111';
         console.info(`[${event.id}] Found user: ${userId}`);
 
         // Parse cart items from metadata
@@ -169,7 +176,7 @@ async function handleEvent(event: Stripe.Event) {
         }
 
         const purchasedAtIso = new Date().toISOString();
-        const representativePhotoId = await findRepresentativePhotoIdForPurchase(cartItems, purchasedAtIso);
+        const representativePhotoId = await findRepresentativePhotoIdForPurchase(cartItems, purchasedAtIso, userParkId);
 
         // Create purchase record (photo_id may be null for pass-only orders)
         const { data: purchase, error: purchaseError } = await supabase
@@ -177,6 +184,7 @@ async function handleEvent(event: Stripe.Event) {
           .insert({
             user_id: userId,
             photo_id: representativePhotoId,
+            park_id: userParkId,
             stripe_checkout_session_id: checkout_session_id,
             stripe_payment_intent_id: payment_intent as string,
             amount_cents: amount_total,
@@ -213,7 +221,7 @@ async function handleEvent(event: Stripe.Event) {
                 purchase_id: purchase.id,
                 item_type: 'photo',
                 photo_id: item.photoId,
-                unit_amount_cents: Math.round(item.price * 100),
+                unit_amount_cents: Math.round((item.price ?? 0) * 100),
                 quantity: item.quantity || 1,
               });
 
@@ -228,6 +236,7 @@ async function handleEvent(event: Stripe.Event) {
                 {
                   user_id: userId,
                   photo_id: item.photoId,
+                  park_id: userParkId,
                   unlocked_at: new Date().toISOString(),
                 },
                 {
@@ -241,7 +250,7 @@ async function handleEvent(event: Stripe.Event) {
             } else {
               unlockedCount++;
               console.info(`[${event.id}] Unlocked photo: ${item.photoId}`);
-              await upsertLeaderboardEntryForPhoto(userId, item.photoId, event.id);
+              await upsertLeaderboardEntryForPhoto(userId, item.photoId, userParkId, event.id);
             }
             continue;
           }
@@ -268,7 +277,8 @@ async function handleEvent(event: Stripe.Event) {
             // Unlock all photos captured on the pass day
             const { data: dayPhotos, error: dayPhotosError } = await supabase
               .from('photos')
-              .select('id, speed_kmh, captured_at, storage_path')
+              .select('id, speed_kmh, captured_at, storage_path, park_id')
+              .eq('park_id', userParkId)
               .gte('captured_at', dayRange.startIso)
               .lt('captured_at', dayRange.endIso);
 
@@ -277,7 +287,7 @@ async function handleEvent(event: Stripe.Event) {
               continue;
             }
 
-            const uniquePhotoIds = Array.from(new Set((dayPhotos || []).map((p) => p.id).filter(Boolean)));
+            const uniquePhotoIds = Array.from(new Set((dayPhotos || []).map((p: any) => p.id).filter(Boolean)));
             if (uniquePhotoIds.length === 0) {
               console.info(`[${event.id}] No photos found for pass day ${dayRange.selectedDate}`);
               continue;
@@ -286,6 +296,7 @@ async function handleEvent(event: Stripe.Event) {
             const unlockRows = uniquePhotoIds.map((photoId) => ({
               user_id: userId,
               photo_id: photoId,
+              park_id: userParkId,
               unlocked_at: purchasedAtIso,
             }));
 
@@ -307,6 +318,7 @@ async function handleEvent(event: Stripe.Event) {
                 photo_id: photo.id,
                 speed_kmh: resolveSpeedForLeaderboard(photo.speed_kmh, photo.storage_path),
                 ride_date: toDateOnly(photo.captured_at),
+                park_id: photo.park_id ?? userParkId,
               }));
 
               if (leaderboardRows.length > 0) {
@@ -385,10 +397,10 @@ function toDateOnly(isoOrDateString: string): string {
   return new Date(isoOrDateString).toISOString().slice(0, 10);
 }
 
-async function upsertLeaderboardEntryForPhoto(userId: string, photoId: string, eventId: string) {
+async function upsertLeaderboardEntryForPhoto(userId: string, photoId: string, userParkId: string, eventId: string) {
   const { data: photo, error: photoError } = await supabase
     .from('photos')
-    .select('id, speed_kmh, captured_at, storage_path')
+    .select('id, speed_kmh, captured_at, storage_path, park_id')
     .eq('id', photoId)
     .maybeSingle();
 
@@ -405,6 +417,7 @@ async function upsertLeaderboardEntryForPhoto(userId: string, photoId: string, e
         photo_id: photo.id,
         speed_kmh: resolveSpeedForLeaderboard(photo.speed_kmh, photo.storage_path),
         ride_date: toDateOnly(photo.captured_at),
+        park_id: photo.park_id ?? userParkId,
       },
       {
         onConflict: 'user_id,photo_id',
@@ -434,7 +447,7 @@ function getDayRangeInUtc(selectedDate: string | null, fallbackIso: string) {
   };
 }
 
-async function findRepresentativePhotoIdForPurchase(cartItems: CheckoutCartItem[], fallbackIso: string) {
+async function findRepresentativePhotoIdForPurchase(cartItems: CheckoutCartItem[], fallbackIso: string, parkId: string) {
   const photoItem = cartItems.find((item) => item.type === 'photo' && !!item.photoId);
   if (photoItem?.photoId) {
     return photoItem.photoId;
@@ -446,6 +459,7 @@ async function findRepresentativePhotoIdForPurchase(cartItems: CheckoutCartItem[
     const { data: passDayPhoto } = await supabase
       .from('photos')
       .select('id')
+      .eq('park_id', parkId)
       .gte('captured_at', dayRange.startIso)
       .lt('captured_at', dayRange.endIso)
       .order('captured_at', { ascending: true })

@@ -47,6 +47,7 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
         .from('rides')
         .insert({
           user_id: user.id,
+          park_id: user.park_id || '11111111-1111-1111-1111-111111111111',
           ride_at: new Date().toISOString(),
           source: 'now',
           note: null
@@ -83,6 +84,7 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
         .from('rides')
         .insert({
           user_id: user.id,
+          park_id: user.park_id || '11111111-1111-1111-1111-111111111111',
           ride_at: rideDateTime.toISOString(),
           source: 'manual',
           note: null

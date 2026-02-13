@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Shield, CircleHelp as HelpCircle, LogOut, Trash2, Bell, Download, Share2, ChevronRight, Clock, Camera } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '@/hooks/useAuth';
 import { useAccess } from '@/contexts/AccessContext';
 import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +11,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { supabase } from '@/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface MenuSection {
   title: string;
@@ -27,7 +27,7 @@ interface MenuItem {
 }
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { logout } = useAccess();
   const { t, i18n } = useTranslation();
   const [ridesCount, setRidesCount] = useState<number>(0);
@@ -147,7 +147,26 @@ export default function ProfileScreen() {
     return `${month} ${year}`;
   };
 
+  const performLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      await logout();
+      router.replace('/auth');
+    } catch (error: any) {
+      console.error('Error during logout:', error);
+      Alert.alert(t('common.error'), error?.message || t('auth.errors.authFailed'));
+    }
+  };
+
   const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`${t('profile.logoutTitle')}\n\n${t('profile.logoutDescription')}`);
+      if (!confirmed) return;
+      await performLogout();
+      return;
+    }
+
     Alert.alert(
       t('profile.logoutTitle'),
       t('profile.logoutDescription'),
@@ -158,8 +177,8 @@ export default function ProfileScreen() {
         },
         {
           text: t('profile.logoutButton'),
-          onPress: async () => {
-            await logout();
+          onPress: () => {
+            void performLogout();
           },
           style: 'destructive',
         },

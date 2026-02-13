@@ -344,8 +344,12 @@
     "termsPrefix": "By signing in, you agree to our",
     "andThe": "and the",
     "termsSuffix": ".",
+    "park": "Park",
+    "loadingParks": "Loading parks...",
+    "selectPark": "Select park",
     "errors": {
       "fillAllFields": "Please fill in all fields.",
+      "selectParkRequired": "Please select a park.",
       "passwordTooShort": "Password must be at least 6 characters long.",
       "authFailed": "Authentication failed",
       "invalidCredentials": "Invalid email or password",

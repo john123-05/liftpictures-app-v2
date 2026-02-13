@@ -344,8 +344,12 @@
     "termsPrefix": "En vous connectant, vous acceptez notre",
     "andThe": "et le",
     "termsSuffix": ".",
+    "park": "Parc",
+    "loadingParks": "Chargement des parcs...",
+    "selectPark": "Sélectionner un parc",
     "errors": {
       "fillAllFields": "Veuillez remplir tous les champs.",
+      "selectParkRequired": "Veuillez sélectionner un parc.",
       "passwordTooShort": "Le mot de passe doit comporter au moins 6 caractères.",
       "authFailed": "L'authentification a échoué",
       "invalidCredentials": "Email ou mot de passe invalide",
