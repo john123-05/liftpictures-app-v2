@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator, Platform, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Shield, CircleHelp as HelpCircle, LogOut, Trash2, Bell, Download, Share2, ChevronRight, Clock, Camera } from 'lucide-react-native';
+import { User, Shield, CircleHelp as HelpCircle, LogOut, Trash2, Bell, Download, Share2, ChevronRight, Clock, Camera, Check } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAccess } from '@/contexts/AccessContext';
@@ -27,7 +27,7 @@ interface MenuItem {
 }
 
 export default function ProfileScreen() {
-  const { user } = useAuthContext();
+  const { user, getUserParks, switchPark } = useAuthContext();
   const { logout } = useAccess();
   const { t, i18n } = useTranslation();
   const [ridesCount, setRidesCount] = useState<number>(0);
@@ -41,6 +41,9 @@ export default function ProfileScreen() {
   const [deleteCodeModalVisible, setDeleteCodeModalVisible] = useState(false);
   const [deleteCode, setDeleteCode] = useState('');
   const [deleteCodeType, setDeleteCodeType] = useState<'reauthentication' | 'email'>('reauthentication');
+  const [userParks, setUserParks] = useState<{ park_id: string; name: string; slug: string }[]>([]);
+  const [parkSwitchModalVisible, setParkSwitchModalVisible] = useState(false);
+  const [switchingPark, setSwitchingPark] = useState(false);
 
   const resolveAndSetAvatarUrl = useCallback(async (avatarRef: string | null | undefined) => {
     if (!avatarRef) {
@@ -102,8 +105,17 @@ export default function ProfileScreen() {
 
       if (user.created_at) {
         const createdDate = new Date(user.created_at);
-        const formattedDate = formatMemberSince(createdDate);
-        setMemberSince(formattedDate);
+        const monthNames: { [key: string]: string[] } = {
+          de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+          en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+          es: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+        };
+
+        const currentLang = i18n.language || 'de';
+        const months = monthNames[currentLang] || monthNames.de;
+        const month = months[createdDate.getMonth()];
+        const year = createdDate.getFullYear();
+        setMemberSince(`${month} ${year}`);
       }
 
       const { data: profileData, error: profileError } = await supabase
@@ -124,28 +136,34 @@ export default function ProfileScreen() {
     }
   }, [user?.id, user?.created_at, i18n.language, resolveAndSetAvatarUrl]);
 
+  const fetchUserParkMemberships = useCallback(async () => {
+    if (!user?.id) {
+      setUserParks([]);
+      return;
+    }
+
+    try {
+      const { data, success, error } = await getUserParks(user.id);
+      if (!success) {
+        console.error('Error fetching user park memberships:', error);
+        return;
+      }
+      setUserParks(data || []);
+    } catch (error) {
+      console.error('Error fetching user park memberships:', error);
+    }
+  }, [getUserParks, user?.id]);
+
   useFocusEffect(
     useCallback(() => {
       if (user?.id) {
         fetchProfileStats();
+        fetchUserParkMemberships();
       }
-    }, [user?.id, fetchProfileStats])
+    }, [user?.id, fetchProfileStats, fetchUserParkMemberships])
   );
 
-  const formatMemberSince = (date: Date): string => {
-    const monthNames: { [key: string]: string[] } = {
-      de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
-      en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-      es: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-    };
-
-    const currentLang = i18n.language || 'de';
-    const months = monthNames[currentLang] || monthNames.de;
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-
-    return `${month} ${year}`;
-  };
+  const activeParkName = userParks.find((park) => park.park_id === user?.park_id)?.name;
 
   const performLogout = async () => {
     try {
@@ -374,29 +392,60 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSwitchPark = async (parkId: string) => {
+    if (!parkId || switchingPark) return;
+
+    try {
+      setSwitchingPark(true);
+      const result = await switchPark(parkId);
+      if (!result.success) {
+        throw result.error || new Error('Parkwechsel fehlgeschlagen');
+      }
+
+      await fetchUserParkMemberships();
+      setParkSwitchModalVisible(false);
+      Alert.alert('Park gewechselt', 'Dein Konto ist jetzt auf den ausgewählten Park umgestellt.');
+    } catch (error: any) {
+      console.error('Error switching park:', error);
+      Alert.alert(t('common.error'), error?.message || 'Parkwechsel fehlgeschlagen.');
+    } finally {
+      setSwitchingPark(false);
+    }
+  };
+
+  const accountItems: MenuItem[] = [
+    {
+      icon: <User size={18} color="#ff6b35" />,
+      title: t('profile.editProfile'),
+      subtitle: t('profile.editProfileDescription'),
+      onPress: () => router.push('/edit-profile'),
+    },
+    ...(userParks.length > 1
+      ? [{
+          icon: <User size={18} color="#ff6b35" />,
+          title: 'Park wechseln',
+          subtitle: activeParkName ? `Aktueller Park: ${activeParkName}` : 'Zwischen registrierten Parks wechseln',
+          onPress: () => setParkSwitchModalVisible(true),
+        } as MenuItem]
+      : []),
+    {
+      icon: <Clock size={18} color="#ff6b35" />,
+      title: t('rides.myRides'),
+      subtitle: t('dashboard.myRidesToday'),
+      onPress: () => router.push('/rides'),
+    },
+    {
+      icon: <Bell size={18} color="#ff6b35" />,
+      title: t('profile.notifications'),
+      subtitle: t('profile.notificationsDescription'),
+      onPress: () => router.push('/notifications'),
+    },
+  ];
+
   const menuSections: MenuSection[] = [
     {
       title: t('profile.account'),
-      items: [
-        {
-          icon: <User size={18} color="#ff6b35" />,
-          title: t('profile.editProfile'),
-          subtitle: t('profile.editProfileDescription'),
-          onPress: () => router.push('/edit-profile'),
-        },
-        {
-          icon: <Clock size={18} color="#ff6b35" />,
-          title: t('rides.myRides'),
-          subtitle: t('dashboard.myRidesToday'),
-          onPress: () => router.push('/rides'),
-        },
-        {
-          icon: <Bell size={18} color="#ff6b35" />,
-          title: t('profile.notifications'),
-          subtitle: t('profile.notificationsDescription'),
-          onPress: () => router.push('/notifications'),
-        },
-      ],
+      items: accountItems,
     },
     {
       title: t('profile.data'),
@@ -555,6 +604,44 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={parkSwitchModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setParkSwitchModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Park wechseln</Text>
+            <Text style={styles.modalSubtitle}>
+              Wähle den Park, für den du dich jetzt anmelden möchtest.
+            </Text>
+
+            {userParks.map((park) => (
+              <TouchableOpacity
+                key={park.park_id}
+                style={styles.parkSwitchOption}
+                disabled={switchingPark}
+                onPress={() => handleSwitchPark(park.park_id)}
+              >
+                <Text style={styles.parkSwitchOptionText}>{park.name}</Text>
+                {user?.park_id === park.park_id ? <Check size={18} color="#ff6b35" /> : null}
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                disabled={switchingPark}
+                onPress={() => setParkSwitchModalVisible(false)}
+              >
+                <Text style={styles.modalCancelButtonText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={deleteConfirmModalVisible}
@@ -863,6 +950,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
     marginBottom: 12,
+  },
+  parkSwitchOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2c',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  parkSwitchOptionText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
   },
   modalActions: {
     flexDirection: 'row',

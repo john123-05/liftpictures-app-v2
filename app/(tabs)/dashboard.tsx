@@ -32,9 +32,9 @@ const parseSpeedFromStoragePath = (storagePath?: string | null): number => {
   if (!storagePath) return 0;
   const fileName = storagePath.split('/').pop() || storagePath;
   const stem = fileName.replace(/\.[^.]+$/, '');
-  const digits = stem.replace(/\D/g, '');
-  if (digits.length < 4) return 0;
-  const parsed = Number.parseInt(digits.slice(-4), 10);
+  const explicitSuffix = stem.match(/_S(\d{4})$/i);
+  if (!explicitSuffix?.[1]) return 0;
+  const parsed = Number.parseInt(explicitSuffix[1], 10);
   if (Number.isNaN(parsed)) return 0;
   return parsed / 100;
 };

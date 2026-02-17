@@ -25,12 +25,14 @@ interface Photo {
   storage_bucket: string;
   storage_path: string;
   captured_at: string;
+  attraction_id: string | null;
 }
 
 interface Ride {
   id: string;
   ride_at: string;
   source: string;
+  camera_code?: string | null;
 }
 
 interface DBPhoto {
@@ -43,6 +45,14 @@ interface DBPhoto {
   purchases: Array<{ status: string }>;
 }
 
+interface Attraction {
+  id: string;
+  park_id: string;
+  slug: string;
+  name: string;
+  is_active: boolean;
+}
+
 type SocialPlatform = 'instagram' | 'facebook' | 'x' | 'tiktok';
 
 const parseSpeedFromStoragePath = (storagePath: string): number => {
@@ -50,12 +60,9 @@ const parseSpeedFromStoragePath = (storagePath: string): number => {
 
   const fileName = storagePath.split('/').pop() || storagePath;
   const fileStem = fileName.replace(/\.[^.]+$/, '');
-  const digits = fileStem.replace(/\D/g, '');
-
-  if (digits.length < 4) return 0;
-
-  const lastFourDigits = digits.slice(-4);
-  const parsed = Number.parseInt(lastFourDigits, 10);
+  const explicitSuffix = fileStem.match(/_S(\d{4})$/i);
+  if (!explicitSuffix?.[1]) return 0;
+  const parsed = Number.parseInt(explicitSuffix[1], 10);
 
   if (Number.isNaN(parsed)) return 0;
 
@@ -90,6 +97,8 @@ export default function GalleryScreen() {
   const [selectedSharePhotoIds, setSelectedSharePhotoIds] = useState<string[]>([]);
   const [sharePhotoIds, setSharePhotoIds] = useState<string[]>([]);
   const [loadingPurchased, setLoadingPurchased] = useState(false);
+  const [attractions, setAttractions] = useState<Attraction[]>([]);
+  const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null);
   const { user } = useAuthContext();
   const { addToCart, items: cartItems } = useCart();
   const cartPhotoIds = useMemo(() => new Set(cartItems.map((item) => item.photoId)), [cartItems]);
@@ -98,8 +107,11 @@ export default function GalleryScreen() {
     if (user) {
       fetchFavorites();
       fetchRides();
+      fetchAttractions();
     } else {
       setFavoritePhotoIds([]);
+      setAttractions([]);
+      setSelectedAttractionId(null);
       setLoading(false);
     }
   }, [user]);
@@ -109,6 +121,7 @@ export default function GalleryScreen() {
       if (user) {
         fetchFavorites();
         fetchRides();
+        fetchAttractions();
         if (showPurchasedImages) {
           fetchPurchasedPhotos();
         }
@@ -151,6 +164,32 @@ export default function GalleryScreen() {
     }
   };
 
+  const fetchAttractions = async () => {
+    if (!user) return;
+
+    try {
+      const parkId = user.park_id || '11111111-1111-1111-1111-111111111111';
+      const { data, error } = await supabase
+        .from('attractions')
+        .select('id, park_id, slug, name, is_active')
+        .eq('park_id', parkId)
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const parsed = (data || []) as Attraction[];
+      setAttractions(parsed);
+      if (parsed.length <= 1) {
+        setSelectedAttractionId(null);
+      }
+    } catch (error: any) {
+      console.error('Error fetching attractions:', error);
+      setAttractions([]);
+      setSelectedAttractionId(null);
+    }
+  };
+
   const fetchPurchasedPhotos = async () => {
     if (!user) return;
 
@@ -169,6 +208,7 @@ export default function GalleryScreen() {
             storage_path,
             captured_at,
             speed_kmh,
+            attraction_id,
             park_id
           )
         `)
@@ -224,6 +264,7 @@ export default function GalleryScreen() {
                 storage_bucket: photo.storage_bucket,
                 storage_path: photo.storage_path,
                 captured_at: photo.captured_at,
+                attraction_id: photo.attraction_id ?? null,
               };
             })
         );
@@ -318,12 +359,11 @@ export default function GalleryScreen() {
     }
   };
 
-  const handleRideSelect = async (ride: Ride) => {
+  const fetchRidePhotos = async (ride: Ride, attractionId: string | null = selectedAttractionId) => {
     if (!user) return;
 
     setShareSelectionMode(false);
     setSelectedSharePhotoIds([]);
-    setSelectedRide(ride);
     setLoading(true);
 
     try {
@@ -331,6 +371,47 @@ export default function GalleryScreen() {
       const rideTime = new Date(ride.ride_at);
       const fromTime = new Date(rideTime.getTime() - 7 * 60 * 1000);
       const toTime = new Date(rideTime.getTime() + 7 * 60 * 1000);
+      const dayStart = new Date(rideTime);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(rideTime);
+      dayEnd.setHours(23, 59, 59, 999);
+      const dayPrefix = String(rideTime.getDate()).padStart(2, '0');
+
+      const normalizeAttraction = (rows: any[]) => {
+        if (!attractionId) return rows;
+        return rows.filter((photo) => photo.attraction_id === attractionId);
+      };
+
+      const dedupeById = (rows: any[]) => {
+        const seen = new Set<string>();
+        return rows.filter((row) => {
+          if (!row?.id) return false;
+          if (seen.has(row.id)) return false;
+          seen.add(row.id);
+          return true;
+        });
+      };
+
+      const inferRideCameraCode = async (): Promise<string | null> => {
+        if (ride.camera_code) return ride.camera_code;
+
+        const { data: cameras, error: cameraError } = await supabase
+          .from('park_cameras')
+          .select('customer_code')
+          .eq('park_id', parkId)
+          .eq('is_active', true);
+
+        if (cameraError) {
+          console.error('Error inferring ride camera code:', cameraError);
+          return null;
+        }
+
+        const uniqueCodes = Array.from(
+          new Set((cameras || []).map((camera: any) => camera.customer_code).filter(Boolean))
+        );
+
+        return uniqueCodes.length === 1 ? uniqueCodes[0] : null;
+      };
 
       const { data, error } = await supabase
         .from('photos')
@@ -346,10 +427,61 @@ export default function GalleryScreen() {
 
       if (error) throw error;
 
-      let resolvedData = data || [];
+      let resolvedData = normalizeAttraction((data || []) as any[]);
 
       if (resolvedData.length === 0) {
-        // Fallback for legacy photos without park_id backfill.
+        const rideCameraCode = await inferRideCameraCode();
+
+        let fallbackQuery = supabase
+          .from('photos')
+          .select(`
+            *,
+            purchases!left(status),
+            unlocked_photos!left(user_id)
+          `)
+          .eq('park_id', parkId)
+          .gte('captured_at', dayStart.toISOString())
+          .lte('captured_at', dayEnd.toISOString())
+          .order('captured_at', { ascending: true });
+
+        if (rideCameraCode) {
+          fallbackQuery = fallbackQuery.eq('source_customer_code', rideCameraCode);
+        }
+
+        const { data: dayData, error: dayError } = await fallbackQuery;
+        if (dayError) throw dayError;
+
+        const dayRows = normalizeAttraction((dayData || []) as any[]);
+
+        // Optional source_time_code match for providers where date signal is encoded in filename metadata.
+        let sourceCodeRows: any[] = [];
+        let sourceQuery = supabase
+          .from('photos')
+          .select(`
+            *,
+            purchases!left(status),
+            unlocked_photos!left(user_id)
+          `)
+          .eq('park_id', parkId)
+          .like('source_time_code', `${dayPrefix}%`)
+          .order('captured_at', { ascending: true });
+
+        if (rideCameraCode) {
+          sourceQuery = sourceQuery.eq('source_customer_code', rideCameraCode);
+        }
+
+        const { data: sourceCodeData, error: sourceCodeError } = await sourceQuery;
+        if (sourceCodeError) {
+          console.error('Error loading source_time_code fallback photos:', sourceCodeError);
+        } else {
+          sourceCodeRows = normalizeAttraction((sourceCodeData || []) as any[]);
+        }
+
+        resolvedData = dedupeById([...dayRows, ...sourceCodeRows]);
+      }
+
+      if (resolvedData.length === 0) {
+        // Legacy fallback for rows without park_id backfill.
         const { data: legacyData, error: legacyError } = await supabase
           .from('photos')
           .select(`
@@ -362,7 +494,7 @@ export default function GalleryScreen() {
           .order('captured_at', { ascending: true });
 
         if (legacyError) throw legacyError;
-        resolvedData = legacyData || [];
+        resolvedData = normalizeAttraction((legacyData || []) as any[]);
       }
 
       if (resolvedData.length === 0) {
@@ -393,6 +525,7 @@ export default function GalleryScreen() {
             storage_bucket: dbPhoto.storage_bucket,
             storage_path: dbPhoto.storage_path,
             captured_at: dbPhoto.captured_at,
+            attraction_id: dbPhoto.attraction_id ?? null,
           };
         });
 
@@ -422,6 +555,16 @@ export default function GalleryScreen() {
       setLoading(false);
     }
   };
+
+  const handleRideSelect = async (ride: Ride) => {
+    setSelectedRide(ride);
+    await fetchRidePhotos(ride, selectedAttractionId);
+  };
+
+  useEffect(() => {
+    if (!selectedRide || !user) return;
+    fetchRidePhotos(selectedRide, selectedAttractionId);
+  }, [selectedAttractionId, selectedRide, user]);
 
   const toggleFavorite = async (id: string) => {
     if (!user) {
@@ -1236,6 +1379,47 @@ export default function GalleryScreen() {
       </View>
 
       <View style={styles.purchasedButtonContainer}>
+        {attractions.length > 1 && (
+          <View style={styles.attractionFilterContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attractionFilterContent}>
+              <TouchableOpacity
+                style={[
+                  styles.attractionChip,
+                  !selectedAttractionId && styles.attractionChipActive,
+                ]}
+                onPress={() => setSelectedAttractionId(null)}
+              >
+                <Text
+                  style={[
+                    styles.attractionChipText,
+                    !selectedAttractionId && styles.attractionChipTextActive,
+                  ]}
+                >
+                  Alle Attraktionen
+                </Text>
+              </TouchableOpacity>
+              {attractions.map((attraction) => (
+                <TouchableOpacity
+                  key={attraction.id}
+                  style={[
+                    styles.attractionChip,
+                    selectedAttractionId === attraction.id && styles.attractionChipActive,
+                  ]}
+                  onPress={() => setSelectedAttractionId(attraction.id)}
+                >
+                  <Text
+                    style={[
+                      styles.attractionChipText,
+                      selectedAttractionId === attraction.id && styles.attractionChipTextActive,
+                    ]}
+                  >
+                    {attraction.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
         <TouchableOpacity
           style={styles.purchasedButton}
           onPress={() => {
@@ -1565,6 +1749,33 @@ const styles = StyleSheet.create({
   purchasedButtonContainer: {
     paddingHorizontal: 20,
     marginBottom: 16,
+  },
+  attractionFilterContainer: {
+    marginBottom: 12,
+  },
+  attractionFilterContent: {
+    gap: 8,
+    paddingRight: 12,
+  },
+  attractionChip: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  attractionChipActive: {
+    backgroundColor: '#ff6b35',
+    borderColor: '#ff6b35',
+  },
+  attractionChipText: {
+    color: '#ddd',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  attractionChipTextActive: {
+    color: '#000',
   },
   purchasedButton: {
     backgroundColor: '#1a1a1a',

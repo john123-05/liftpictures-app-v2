@@ -15,6 +15,12 @@ type Park = {
   slug: string;
 };
 
+type MembershipPark = {
+  park_id: string;
+  name: string;
+  slug: string;
+};
+
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -28,9 +34,12 @@ export default function AuthScreen() {
   const [selectedParkId, setSelectedParkId] = useState<string>('');
   const [loadingParks, setLoadingParks] = useState(false);
   const [showParkModal, setShowParkModal] = useState(false);
+  const [showLoginParkModal, setShowLoginParkModal] = useState(false);
+  const [loginParks, setLoginParks] = useState<MembershipPark[]>([]);
+  const [selectedLoginParkId, setSelectedLoginParkId] = useState<string>('');
   const { t } = useTranslation();
 
-  const { signIn, signUp, user, loading: authLoading } = useAuthContext();
+  const { signIn, signUp, signOut, user, loading: authLoading, switchPark } = useAuthContext();
 
   useEffect(() => {
     const loadParks = async () => {
@@ -46,9 +55,10 @@ export default function AuthScreen() {
 
         const loadedParks = (data || []) as Park[];
         setParks(loadedParks);
-        if (loadedParks.length > 0 && !selectedParkId) {
+        if (loadedParks.length > 0) {
           const adventure = loadedParks.find((park) => park.slug === 'adventure-land');
-          setSelectedParkId((adventure || loadedParks[0]).id);
+          const defaultParkId = (adventure || loadedParks[0]).id;
+          setSelectedParkId((prev) => prev || defaultParkId);
         }
       } catch (err) {
         console.error('Error loading parks:', err);
@@ -62,10 +72,10 @@ export default function AuthScreen() {
 
   useEffect(() => {
     // Navigate only after auth context confirms a logged-in user.
-    if (!isSignUp && !authLoading && user) {
+    if (!isSignUp && !authLoading && !isLoading && user && !showLoginParkModal) {
       router.replace('/(tabs)');
     }
-  }, [isSignUp, authLoading, user]);
+  }, [isSignUp, authLoading, isLoading, user, showLoginParkModal]);
 
   const handleAuth = async () => {
     setError('');
@@ -95,7 +105,10 @@ export default function AuthScreen() {
         console.log('Attempting sign up with:', { email, firstName, lastName });
         result = await signUp(email, password, firstName, lastName, selectedParkId);
 
-        if (!result.error) {
+        if (!result.error && result?.existingUserLinkedPark) {
+          setSuccessMessage('Park erfolgreich mit deinem bestehenden Konto verknüpft.');
+          setTimeout(() => router.replace('/(tabs)'), 900);
+        } else if (!result.error) {
           setSuccessMessage(t('auth.signupSuccess'));
           setEmail('');
           setPassword('');
@@ -110,6 +123,13 @@ export default function AuthScreen() {
       } else {
         console.log('Attempting sign in with:', { email });
         result = await signIn(email, password);
+
+        if (!result?.error && result?.requiresParkSelection) {
+          const availableParks = (result.parks || []) as MembershipPark[];
+          setLoginParks(availableParks);
+          setSelectedLoginParkId(availableParks[0]?.park_id || '');
+          setShowLoginParkModal(true);
+        }
       }
 
       console.log('Auth result:', result);
@@ -124,6 +144,8 @@ export default function AuthScreen() {
           errorMessage = t('auth.errors.emailNotConfirmed');
         } else if (result.error.message?.includes('User already registered')) {
           errorMessage = t('auth.errors.emailAlreadyRegistered');
+        } else if (result.error.message?.includes('Selected park is not linked')) {
+          errorMessage = 'Dieser Park ist nicht mit deinem Konto verknüpft.';
         } else {
           errorMessage = result.error.message || errorMessage;
         }
@@ -136,6 +158,39 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfirmLoginPark = async () => {
+    if (!selectedLoginParkId) return;
+
+    setIsLoading(true);
+    setError('');
+    try {
+      // Re-auth with explicit preferred park to avoid session timing issues.
+      const reSignInResult = await signIn(email, password, selectedLoginParkId);
+      if (reSignInResult?.error) {
+        throw reSignInResult.error;
+      }
+
+      // Safety fallback in case backend accepted login but park switch was not persisted.
+      const switchResult = await switchPark(selectedLoginParkId);
+      if (!switchResult.success) {
+        console.warn('Park switch fallback warning:', switchResult.error);
+      }
+
+      setShowLoginParkModal(false);
+    } catch (error: any) {
+      setError(error?.message || 'Parkauswahl konnte nicht gespeichert werden.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelLoginPark = async () => {
+    setShowLoginParkModal(false);
+    setLoginParks([]);
+    setSelectedLoginParkId('');
+    await signOut();
   };
 
   const handleBack = () => {
@@ -335,6 +390,42 @@ export default function AuthScreen() {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.closeModalButton} onPress={() => setShowParkModal(false)}>
+              <Text style={styles.closeModalButtonText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showLoginParkModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCancelLoginPark}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Du bist bei mehreren Parks registriert</Text>
+            <Text style={styles.loginParkSubtitle}>Bitte wähle den Park für diese Anmeldung.</Text>
+            {loginParks.map((park) => (
+              <TouchableOpacity
+                key={park.park_id}
+                style={styles.parkOption}
+                onPress={() => setSelectedLoginParkId(park.park_id)}
+              >
+                <Text style={styles.parkOptionText}>{park.name}</Text>
+                {selectedLoginParkId === park.park_id ? <Check size={18} color="#ff6b35" /> : null}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.authButton, isLoading && styles.authButtonLoading, { marginTop: 14 }]}
+              onPress={handleConfirmLoginPark}
+              disabled={isLoading || !selectedLoginParkId}
+            >
+              <Text style={styles.authButtonText}>
+                {isLoading ? t('common.loading') : t('auth.signIn')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.closeModalButton} onPress={handleCancelLoginPark} disabled={isLoading}>
               <Text style={styles.closeModalButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
@@ -565,5 +656,10 @@ const styles = StyleSheet.create({
     color: '#ddd',
     fontSize: 15,
     fontWeight: '600',
+  },
+  loginParkSubtitle: {
+    color: '#aaa',
+    marginBottom: 10,
+    fontSize: 14,
   },
 });

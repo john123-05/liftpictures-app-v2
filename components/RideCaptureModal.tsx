@@ -23,6 +23,28 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const getDefaultCameraCode = async (): Promise<string | null> => {
+    if (!user) return null;
+
+    const parkId = user.park_id || '11111111-1111-1111-1111-111111111111';
+    const { data, error } = await supabase
+      .from('park_cameras')
+      .select('customer_code')
+      .eq('park_id', parkId)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error loading active cameras for ride:', error);
+      return null;
+    }
+
+    const uniqueCodes = Array.from(
+      new Set((data || []).map((row: any) => row.customer_code).filter(Boolean))
+    );
+
+    return uniqueCodes.length === 1 ? uniqueCodes[0] : null;
+  };
+
   useEffect(() => {
     if (visible) {
       setShowSuccess(false);
@@ -43,6 +65,7 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
 
     setSaving(true);
     try {
+      const cameraCode = await getDefaultCameraCode();
       const { error } = await supabase
         .from('rides')
         .insert({
@@ -50,7 +73,8 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
           park_id: user.park_id || '11111111-1111-1111-1111-111111111111',
           ride_at: new Date().toISOString(),
           source: 'now',
-          note: null
+          note: null,
+          camera_code: cameraCode,
         });
 
       if (error) throw error;
@@ -79,6 +103,7 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
     try {
       const rideDateTime = new Date(selectedDate);
       rideDateTime.setHours(selectedHour, selectedMinute, 0, 0);
+      const cameraCode = await getDefaultCameraCode();
 
       const { error } = await supabase
         .from('rides')
@@ -87,7 +112,8 @@ export default function RideCaptureModal({ visible, onClose, onSuccess }: RideCa
           park_id: user.park_id || '11111111-1111-1111-1111-111111111111',
           ride_at: rideDateTime.toISOString(),
           source: 'manual',
-          note: null
+          note: null,
+          camera_code: cameraCode,
         });
 
       if (error) throw error;

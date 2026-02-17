@@ -377,11 +377,10 @@ function parseSpeedFromStoragePath(storagePath: string | null | undefined): numb
 
   const fileName = storagePath.split('/').pop() || storagePath;
   const fileStem = fileName.replace(/\.[^.]+$/, '');
-  const digits = fileStem.replace(/\D/g, '');
-  if (digits.length < 4) return 0;
+  const explicitSuffix = fileStem.match(/_S(\d{4})$/i);
+  if (!explicitSuffix?.[1]) return 0;
 
-  const lastFour = digits.slice(-4);
-  const parsed = Number.parseInt(lastFour, 10);
+  const parsed = Number.parseInt(explicitSuffix[1], 10);
   if (Number.isNaN(parsed)) return 0;
   return parsed / 100;
 }

@@ -1,11 +1,14 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useAuth, AuthState } from '@/hooks/useAuth';
+import { useAuth, AuthState, ParkMembership } from '@/hooks/useAuth';
 
 interface AuthContextType extends AuthState {
-  signIn: (email: string, password: string) => Promise<any>;
+  signIn: (email: string, password: string, preferredParkId?: string) => Promise<any>;
   signUp: (email: string, password: string, firstName: string, lastName: string, parkId?: string) => Promise<any>;
   signOut: () => Promise<any>;
   signInAsDemo: () => Promise<any>;
+  getUserParks: (userId?: string) => Promise<{ data: ParkMembership[]; error: any; success: boolean }>;
+  switchPark: (parkId: string) => Promise<{ success: boolean; error: any }>;
+  addCurrentUserToPark: (parkId: string) => Promise<{ success: boolean; error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
