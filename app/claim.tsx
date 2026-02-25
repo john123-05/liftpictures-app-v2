@@ -14,6 +14,7 @@ type ClaimPhoto = {
 };
 
 const PURCHASED_REDIRECT_ROUTE = '/(tabs)/gallery?openPurchased=1';
+const MIN_UNLOCK_REDIRECT_DELAY_MS = 800;
 
 const readParam = (value?: string | string[]) => {
   if (Array.isArray(value)) return value[0] || '';
@@ -31,6 +32,7 @@ export default function ClaimScreen() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlockAnimationStep, setUnlockAnimationStep] = useState(0);
   const unlockStartedRef = useRef(false);
 
   useEffect(() => {
@@ -116,6 +118,21 @@ export default function ClaimScreen() {
     };
   }, [photo?.id]);
 
+  useEffect(() => {
+    if (!isUnlocking || !!unlockError) {
+      setUnlockAnimationStep(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setUnlockAnimationStep((step) => (step + 1) % 4);
+    }, 220);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isUnlocking, unlockError]);
+
   const unlockAndRedirect = useCallback(async () => {
     if (!user?.id || !photo?.id) return;
 
@@ -123,7 +140,7 @@ export default function ClaimScreen() {
     setUnlockError(null);
 
     try {
-      const { error } = await supabase
+      const unlockPromise = supabase
         .from('unlocked_photos')
         .upsert(
           [
@@ -137,6 +154,11 @@ export default function ClaimScreen() {
             ignoreDuplicates: true,
           }
         );
+
+      const [{ error }] = await Promise.all([
+        unlockPromise,
+        new Promise((resolve) => setTimeout(resolve, MIN_UNLOCK_REDIRECT_DELAY_MS)),
+      ]);
 
       if (error) {
         throw error;
@@ -195,12 +217,13 @@ export default function ClaimScreen() {
   }
 
   if (user) {
+    const animatedDots = '.'.repeat(unlockAnimationStep);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color="#ff6b35" />
-          <Text style={styles.title}>{isUnlocking ? t('claim.unlockingTitle') : t('claim.redirectingTitle')}</Text>
-          <Text style={styles.subtitle}>{t('claim.unlockingDescription')}</Text>
+          <Text style={styles.title}>{t('claim.unlockingTitle')}</Text>
+          <Text style={styles.subtitle}>{`${t('claim.addingToAccount')}${animatedDots}`}</Text>
 
           {unlockError ? (
             <>
