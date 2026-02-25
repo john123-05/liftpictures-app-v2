@@ -45,9 +45,7 @@ export default function ClaimScreen() {
 
       try {
         const { data, error } = await supabase
-          .from('photos')
-          .select('id, external_code')
-          .eq('external_code', code)
+          .rpc('find_claim_photo', { p_code: code })
           .single();
 
         if (error || !data) {
