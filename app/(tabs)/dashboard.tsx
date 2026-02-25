@@ -33,10 +33,18 @@ const parseSpeedFromStoragePath = (storagePath?: string | null): number => {
   const fileName = storagePath.split('/').pop() || storagePath;
   const stem = fileName.replace(/\.[^.]+$/, '');
   const explicitSuffix = stem.match(/_S(\d{4})$/i);
-  if (!explicitSuffix?.[1]) return 0;
-  const parsed = Number.parseInt(explicitSuffix[1], 10);
-  if (Number.isNaN(parsed)) return 0;
-  return parsed / 100;
+  if (explicitSuffix?.[1]) {
+    const parsed = Number.parseInt(explicitSuffix[1], 10);
+    if (!Number.isNaN(parsed)) return parsed / 100;
+  }
+
+  // Fallback for camera filenames like 14062062360020283512.jpg (last 4 digits = speed*100)
+  if (/^\d{20}$/.test(stem)) {
+    const parsed = Number.parseInt(stem.slice(-4), 10);
+    if (!Number.isNaN(parsed)) return parsed / 100;
+  }
+
+  return 0;
 };
 
 const resolveSpeed = (speedFromDb?: number | null, storagePath?: string | null): number => {
