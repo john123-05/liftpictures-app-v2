@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, User, ArrowLeft, AlertCircle, ChevronDown, Check } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
@@ -21,8 +21,29 @@ type MembershipPark = {
   slug: string;
 };
 
+const readSearchParam = (value?: string | string[]) => {
+  if (Array.isArray(value)) return value[0] || '';
+  return value || '';
+};
+
 export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const params = useLocalSearchParams<{ redirectTo?: string | string[]; mode?: string | string[] }>();
+  const modeParam = readSearchParam(params.mode);
+  const redirectTarget = useMemo(() => {
+    const raw = readSearchParam(params.redirectTo);
+    if (!raw) return '/(tabs)';
+
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      decoded = raw;
+    }
+
+    return decoded.startsWith('/') ? decoded : '/(tabs)';
+  }, [params.redirectTo]);
+
+  const [isSignUp, setIsSignUp] = useState(modeParam === 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -40,6 +61,17 @@ export default function AuthScreen() {
   const { t } = useTranslation();
 
   const { signIn, signUp, signOut, user, loading: authLoading, switchPark } = useAuthContext();
+
+  useEffect(() => {
+    if (modeParam === 'signup') {
+      setIsSignUp(true);
+      return;
+    }
+
+    if (modeParam === 'signin') {
+      setIsSignUp(false);
+    }
+  }, [modeParam]);
 
   useEffect(() => {
     const loadParks = async () => {
@@ -73,9 +105,9 @@ export default function AuthScreen() {
   useEffect(() => {
     // Navigate only after auth context confirms a logged-in user.
     if (!isSignUp && !authLoading && !isLoading && user && !showLoginParkModal) {
-      router.replace('/(tabs)');
+      router.replace(redirectTarget);
     }
-  }, [isSignUp, authLoading, isLoading, user, showLoginParkModal]);
+  }, [isSignUp, authLoading, isLoading, user, showLoginParkModal, redirectTarget]);
 
   const handleAuth = async () => {
     setError('');
@@ -107,7 +139,7 @@ export default function AuthScreen() {
 
         if (!result.error && result?.existingUserLinkedPark) {
           setSuccessMessage('Park erfolgreich mit deinem bestehenden Konto verknüpft.');
-          setTimeout(() => router.replace('/(tabs)'), 900);
+          setTimeout(() => router.replace(redirectTarget), 900);
         } else if (!result.error) {
           setSuccessMessage(t('auth.signupSuccess'));
           setEmail('');

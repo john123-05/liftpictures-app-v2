@@ -3,7 +3,7 @@ import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-const PUBLIC_ROUTES = ['/', 'auth'];
+const PUBLIC_ROUTES = ['/', 'auth', 'claim'];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthContext();
@@ -22,7 +22,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!user && !inPublicRoute && !inAuthGroup) {
       router.replace('/auth');
     }
-  }, [user, loading, segments, navigationState]);
+  }, [user, loading, segments, navigationState, router]);
 
   // Show loading only while auth is loading
   if (loading) {

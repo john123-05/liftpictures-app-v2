@@ -834,6 +834,28 @@
     "flashOff": "Flash off",
     "privacyNotice": "🔒 The camera is only used for scanning and does not store images"
   },
+  "claim": {
+    "loading": "Loading photo...",
+    "notFoundTitle": "Photo not found",
+    "notFoundDescription": "The image code is invalid or this photo is no longer available.",
+    "toHome": "Back to home",
+    "unlockingTitle": "Unlocking photo",
+    "redirectingTitle": "Redirecting...",
+    "unlockingDescription": "One moment. Your photo will appear in purchased images shortly.",
+    "unlockError": "Unlock failed. Please try again.",
+    "retry": "Try again",
+    "headline": "Your photo is ready",
+    "subline": "Sign in and link this image directly to your account.",
+    "valueHd": "HD forever",
+    "valueShare": "Share with friends",
+    "valueSpeed": "Speed & ranking in dashboard",
+    "stepFound": "Photo found",
+    "stepAccount": "Account",
+    "stepDownload": "Download",
+    "cta": "Unlock now",
+    "login": "Login",
+    "register": "Register"
+  },
   "support": {
     "title": "Help & Support",
     "heroTitle": "We are here to help quickly",

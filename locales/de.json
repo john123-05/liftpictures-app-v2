@@ -834,6 +834,28 @@
     "flashOff": "Blitz aus",
     "privacyNotice": "🔒 Die Kamera wird nur zum Scannen verwendet und speichert keine Bilder"
   },
+  "claim": {
+    "loading": "Foto wird geladen...",
+    "notFoundTitle": "Foto nicht gefunden",
+    "notFoundDescription": "Der Bildcode ist ungültig oder das Foto ist nicht verfügbar.",
+    "toHome": "Zur Startseite",
+    "unlockingTitle": "Foto wird freigeschaltet",
+    "redirectingTitle": "Weiterleitung...",
+    "unlockingDescription": "Einen Moment bitte. Dein Foto erscheint gleich bei den gekauften Bildern.",
+    "unlockError": "Freischalten fehlgeschlagen. Bitte erneut versuchen.",
+    "retry": "Erneut versuchen",
+    "headline": "Dein Foto ist bereit",
+    "subline": "Melde dich an und verknüpfe dieses Bild direkt mit deinem Konto.",
+    "valueHd": "HD dauerhaft",
+    "valueShare": "Teilen mit Freunden",
+    "valueSpeed": "Speed & Ranking im Dashboard",
+    "stepFound": "Foto gefunden",
+    "stepAccount": "Account",
+    "stepDownload": "Download",
+    "cta": "Jetzt freischalten",
+    "login": "Login",
+    "register": "Registrieren"
+  },
   "support": {
     "title": "Hilfe & Support",
     "heroTitle": "Wir helfen dir schnell weiter",
