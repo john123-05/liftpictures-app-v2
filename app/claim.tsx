@@ -159,11 +159,11 @@ export default function ClaimScreen() {
     void unlockAndRedirect();
   }, [authLoading, photo?.id, unlockAndRedirect, user?.id]);
 
-  const openAuth = (mode: 'signin' | 'signup') => {
+  const openAuth = () => {
     router.push({
       pathname: '/auth',
       params: {
-        mode,
+        mode: 'signin',
         redirectTo: `/claim?code=${encodeURIComponent(code)}`,
       },
     });
@@ -242,15 +242,15 @@ export default function ClaimScreen() {
         <View style={styles.bulletList}>
           <View style={styles.bulletRow}>
             <Check size={16} color="#00c851" />
+            <Text style={styles.bulletText}>{t('claim.valueSpeed')}</Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <Check size={16} color="#00c851" />
             <Text style={styles.bulletText}>{t('claim.valueHd')}</Text>
           </View>
           <View style={styles.bulletRow}>
             <Check size={16} color="#00c851" />
             <Text style={styles.bulletText}>{t('claim.valueShare')}</Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Check size={16} color="#00c851" />
-            <Text style={styles.bulletText}>{t('claim.valueSpeed')}</Text>
           </View>
         </View>
 
@@ -280,18 +280,9 @@ export default function ClaimScreen() {
           })}
         </View>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={() => openAuth('signin')}>
+        <TouchableOpacity style={styles.primaryButton} onPress={openAuth}>
           <Text style={styles.primaryButtonText}>{t('claim.cta')}</Text>
         </TouchableOpacity>
-
-        <View style={styles.authRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => openAuth('signin')}>
-            <Text style={styles.secondaryButtonText}>{t('claim.login')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => openAuth('signup')}>
-            <Text style={styles.secondaryButtonText}>{t('claim.register')}</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -447,24 +438,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: '700',
-  },
-  authRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#444',
-    backgroundColor: '#141414',
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
   },
   errorText: {
     color: '#ff6b6b',
