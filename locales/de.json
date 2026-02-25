@@ -854,7 +854,8 @@
     "stepDownload": "Download",
     "cta": "Jetzt freischalten",
     "login": "Login",
-    "register": "Registrieren"
+    "register": "Registrieren",
+    "previewBadge": "VORSCHAU"
   },
   "support": {
     "title": "Hilfe & Support",

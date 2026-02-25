@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { BlurView } from 'expo-blur';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -27,6 +28,7 @@ export default function ClaimScreen() {
   const [photo, setPhoto] = useState<ClaimPhoto | null>(null);
   const [loadingPhoto, setLoadingPhoto] = useState(true);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const unlockStartedRef = useRef(false);
@@ -57,6 +59,7 @@ export default function ClaimScreen() {
       } catch (error: any) {
         if (!active) return;
         setPhoto(null);
+        setPreviewUrl(null);
         setPhotoError(error?.message || 'not_found');
       } finally {
         if (active) {
@@ -71,6 +74,47 @@ export default function ClaimScreen() {
       active = false;
     };
   }, [code]);
+
+  useEffect(() => {
+    if (!photo?.id) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    let active = true;
+
+    const loadPreview = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('photos')
+          .select('storage_bucket, storage_path')
+          .eq('id', photo.id)
+          .maybeSingle();
+
+        if (error || !data?.storage_bucket || !data?.storage_path) {
+          if (active) setPreviewUrl(null);
+          return;
+        }
+
+        const publicUrl = supabase
+          .storage
+          .from(data.storage_bucket)
+          .getPublicUrl(data.storage_path).data.publicUrl;
+
+        if (active) {
+          setPreviewUrl(publicUrl || null);
+        }
+      } catch {
+        if (active) setPreviewUrl(null);
+      }
+    };
+
+    void loadPreview();
+
+    return () => {
+      active = false;
+    };
+  }, [photo?.id]);
 
   const unlockAndRedirect = useCallback(async () => {
     if (!user?.id || !photo?.id) return;
@@ -185,6 +229,16 @@ export default function ClaimScreen() {
         <Text style={styles.title}>{t('claim.headline')}</Text>
         <Text style={styles.subtitle}>{t('claim.subline')}</Text>
 
+        {previewUrl ? (
+          <View style={styles.previewCard}>
+            <Image source={{ uri: previewUrl }} style={styles.previewImage} />
+            <BlurView intensity={40} tint="dark" style={styles.previewBlur} />
+            <View style={styles.previewOverlay}>
+              <Text style={styles.previewBadge}>{t('claim.previewBadge')}</Text>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.bulletList}>
           <View style={styles.bulletRow}>
             <Check size={16} color="#00c851" />
@@ -297,6 +351,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  previewCard: {
+    height: 165,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2b2b2b',
+    backgroundColor: '#121212',
+  },
+  previewImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  previewBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  previewOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+  },
+  previewBadge: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   progressContainer: {
     flexDirection: 'row',

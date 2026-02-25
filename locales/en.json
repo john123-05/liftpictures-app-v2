@@ -854,7 +854,8 @@
     "stepDownload": "Download",
     "cta": "Unlock now",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "previewBadge": "PREVIEW"
   },
   "support": {
     "title": "Help & Support",
